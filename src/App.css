@@ -1,38 +1,714 @@
-.App {
-  text-align: center;
+.sidebar {
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding-left: 1rem;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.sidebar h2 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: left;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.sidebar button {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background-color: transparent;
+  color: #f7fafc;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.sidebar button.active {
+  background-color: #4a5568;
+  color: #ffffff;
+}
+
+/* Dashboard styles */
+.dashboard {
+  background-color: #1a202c; /* Dark background color */
+  color: #f7fafc;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  padding: 1rem;
+  height: 100vh; /* Full height of the main-content */
+}
+
+.dashboard .main-container {
+  background-color: #1a202c; /* Dark background color */
+  display: grid;
+  grid-template-rows: auto auto 1fr; /* Adjust as needed for your layout */
+  gap: 1rem;
+}
+
+.dashboard .decoded-call-section {
+  background-color: #2d3748;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+.dashboard .decoded-call-section label {
+  color: #f7fafc;
+  margin-right: 0.5rem;
+}
+
+.dashboard .decoded-call-section select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #4a5568;
+  border-radius: 0.25rem;
+  background-color: #2d3748;
+  color: #f7fafc;
+}
+
+.dashboard .decoded-call-section .tags {
+  display: flex;
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+}
+
+.dashboard .decoded-call-section .tag {
+  background-color: #4a5568; /* Tag background color */
+  color: #f7fafc; /* Tag text color */
+  padding: 0.25rem 0.5rem; /* Smaller padding for a compact look */
+  border-radius: 0.25rem; /* Updated border-radius */
+  font-size: 0.75rem; /* Smaller font size */
+  font-weight: 500; /* Medium font weight */
+  cursor: pointer; /* Pointer cursor for interactivity */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  display: inline-flex; /* Align items in a row */
+  align-items: center; /* Center items vertically */
+  margin-right: 0.5rem;
+  margin-top: 0.5rem; /* Space between tags */
+}
+
+.dashboard .decoded-call-section .tag:hover {
+  background-color: #2b6cb0; /* Darker shade on hover */
+}
+
+/* Add more styles as needed for other components */
+
+.meta-container {
+  background-color: #1a202c; /* Dark background color */
+  display: flex; /* Use flexbox to align items */
+  height: 100%; /* Full viewport height */
+  width: 100%;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Four equal columns */
+  gap: 1rem; /* Space between columns */
+}
+
+.analysis-item {
+  background-color: #2d3748;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  color: #f7fafc;
+}
+
+.customer-journey-conversation {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  gap: 1rem; /* Space between columns */
+  height: 100%;
+}
+
+.customer-sentiment-journey,
+.conversation {
+  background-color: #2d3748;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  color: #f7fafc;
+  /* Remove overflow-y: auto; */
+}
+
+.audio-timeline {
+  background-color: #2d3748;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  color: #f7fafc;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.audio-player {
+  width: 100%;
+  background-color: #2d3748; /* Dark blue background */
+  color: #f7fafc; /* Light gray text */
+  border-radius: 0.25rem; /* Updated border-radius */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+}
+
+.audio-player::-webkit-media-controls-panel {
+  background-color: #2d3748; /* Match the background color */
+  color: #f7fafc; /* Match the text color */
+}
+
+.audio-player::-webkit-media-controls-play-button,
+.audio-player::-webkit-media-controls-volume-slider {
+  background-color: #ffffff; /* Slightly lighter blue */
+  border-radius: 0.25rem;
+}
+
+.audio-player::-webkit-media-controls-current-time-display,
+.audio-player::-webkit-media-controls-time-remaining-display {
+  color: #ffffff; /* Light gray text */
+}
+
+.conversation-container {
+  background-color: #2d3748;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.conversation-messages {
+  flex: 1;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.message-box {
+  background-color: #ffffff;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  flex-grow: 1; /* Allow the message-box to fill its container */
+  overflow-y: auto; /* Enable vertical scrolling */
+  max-height: 340px; /* Set maximum height */
+}
+
+.message-wrapper {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.message-left {
+  justify-content: flex-start;
+}
+
+.message-right {
+  justify-content: flex-end;
+}
+
+.message {
+  max-width: 70%;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  position: relative;
+}
+
+.message-rep {
+  background-color: #3182ce;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.message-customer {
+  background-color: #48bb78;
+  color: white;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.message-text {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  word-wrap: break-word;
 }
+
+.message-sentiments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.sentiment-tag {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  display: block;
+  margin-top: 0.25rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Scrollbar styling */
+.conversation-messages::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.conversation-messages::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
+}
+
+.conversation-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 0.25rem;
+}
+
+.conversation-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.skip-buttons-container {
+  display: flex;
+  justify-content: space-between; /* Ensures equal spacing between the buttons */
+  padding: 5px 0;
+}
+
+.skip-button {
+  background-color: #2d3748;
+  color: white;
+  border: none;
+  border-radius: 0.25rem; /* Updated border-radius */
+  padding: 5px 15px;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0px 10px;
+  transition: background-color 0.3s ease;
+  flex-grow: 1; /* This makes the buttons take up the available space */
+}
+
+.skip-button:hover {
+  background-color: #1b5081; /* Darker shade for hover effect */
+}
+
+.sidebar-container {
+  width: 16rem; /* Fixed width for sidebar */
+  height: 100vh; /* Full height of the meta-container */
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding: 1rem;
+}
+
+.main-content {
+  flex-grow: 1; /* Take up remaining space */
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Full height of the meta-container */
+  background-color: #1a202c; /* Dark background color */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.calllist-container {
+  width: 100%; /* Ensure it matches the width of the upload section */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.calllist {
+  margin-top: 1rem;
+  width: 100%; /* Match the width of the container */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.calllist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Three columns for call details */
+  row-gap: 0.8rem; /* Increase space between rows */
+  column-gap: 0; /* Remove space between columns */
+  max-width: 90%; /* Ensure it does not exceed the container width */
+}
+
+.calllist-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem; /* Space between rows */
+  background-color: #2d3748; /* Background color for each row */
+  border-radius: 0.25rem; /* Rounded corners for each row */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  font-size: 1rem;
+}
+
+.calllist-row:hover {
+  background-color: #4a5568; /* Darker shade on hover */
+}
+
+.calllist-item {
+  padding: 5px; /* Reduced padding for less spacing */
+  flex: 1; /* Ensure items take equal space */
+  text-align: center; /* Center text within each item */
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.calllist-item:first-child {
+  border-left: 1px solid #1a202c; /* Left border for the first item */
+}
+
+.calllist-item:last-child {
+  border-right: 1px solid #1a202c; /* Right border for the last item */
+}
+
+.bigboom-container {
+  height: 100%; /* Full viewport height */
+  background-color: #1a202c; /* Dark background color */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.meta-container {
+  display: flex; /* Use flexbox to align items */
+  height: 100%; /* Full height of the bigboom-container */
+  width: 100%;
+  background-color: #1a202c; /* Dark background color */  /* Full width of the bigboom-container */
+}
+
+.sidebar-container {
+  width: 16rem; /* Fixed width for sidebar */
+  height: 100vh; /* Full height of the meta-container */
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding: 1rem;
+}
+
+.main-content {
+  flex-grow: 1; /* Take up remaining space */
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Full height of the meta-container */
+  background-color: #1a202c; /* Dark background color */
+}
+
+.dashboard {
+  background-color: #1a202c; /* Dark background color */
+  color: #f7fafc;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  height: 100%; /* Full height of the main-content */
+}
+
+.calllist-container {
+  flex-grow: 1; /* Take up remaining space */
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background-color: #1a202c;
+  border-radius: 0.25rem;
+  height: 100%; /* Full height of the main-content */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.calllist {
+  background-color: #1a202c; /* Dark background for the table */
+  border-radius: 0.5rem; /* Rounded corners */
+  overflow: hidden; /* Ensures the border-radius is applied */
+  max-width: 95%; /* Subtle shadow for depth */
+}
+
+.calllist-header, .calllist-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem; /* Increased padding for a more spacious look */
+  border-bottom: 1px solid #2d3748; /* Subtle border between rows */
+  color: #f7fafc;
+  max-width: 95%; /* Light text color */
+}
+
+.calllist-header {
+  background-color: #2d3748; /* Slightly darker background for the header */
+  font-weight: bold;
+  font-size: 1rem; /* Consistent font size */
+}
+
+.calllist-row {
+  background-color: #1a202c; /* Consistent background color */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.calllist-row:hover {
+  background-color: #2d3748; /* Darker shade on hover */
+}
+
+.calllist-item {
+  flex: 1;
+  text-align: left;
+  padding: 0 0.5rem; /* Horizontal padding for spacing */
+  font-size: 0.875rem; /* Slightly smaller font size for a modern look */
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden; /* Hide overflow text */
+  text-overflow: ellipsis; /* Add ellipsis for overflow text */
+}
+
+.upload-container {
+  border: 2px dashed #718096; /* Light gray border */
+  background-color: #2d3748; /* Dark blue background */
+  color: #f7fafc; /* Light gray text */
+  padding: 3rem;
+  text-align: center;
+  width: 67%;
+}
+
+.upload-icon {
+  margin: auto;
+  height: 3rem;
+  width: 3rem;
+  color: #a0aec0; /* text-gray-400 */
+}
+
+.upload-text,
+.selected-file {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #e2e8f0; /* Very light gray text */
+}
+
+.upload-label {
+  margin-top: 0.5rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: medium;
+  border-radius: 0.25rem; /* Updated border-radius */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: white;
+  background-color: #3182ce; /* bg-blue-600 */
+}
+
+.upload-label:hover {
+  background-color: #2b6cb0; /* hover:bg-blue-700 */
+}
+
+.upload-label:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); /* focus:ring-blue-500 */
+}
+
+.hidden {
+  display: none;
+}
+
+.upload-label {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #4299e1;
+  color: #f7fafc;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.upload-label:hover {
+  background-color: #2b6cb0;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  gap: 1rem; /* Space between columns */
+}
+
+.upload-container.upload-success {
+  background-color: #38a169; /* Green background for success */
+  color: #f7fafc; /* Light text color */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.upload-success-text {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.decode-button {
+  background-color: #3182ce; /* Blue background */
+  color: #f7fafc; /* Light text color */
+  border: none;
+  border-radius: 0.25rem; /* Rounded corners */
+  padding: 0.5rem 1rem; /* Padding for size */
+  font-size: 1rem; /* Font size */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  display: inline-block; /* Inline block for button-like appearance */
+  margin-top: 1rem; /* Space above the button */
+}
+
+.decode-button:hover {
+  background-color: #2b6cb0; /* Darker blue on hover */
+}
+
+.decode-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); /* Focus ring */
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px; /* Double the width */
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.popup h3 {
+  margin-bottom: 1rem;
+}
+
+.popup input,
+.popup select {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #4a5568;
+  background-color: #1a202c;
+  color: #f7fafc;
+}
+
+.popup button {
+  background-color: #3182ce;
+  color: #f7fafc;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.popup button:hover {
+  background-color: #2b6cb0;
+}
+
+.calllist-header, .calllist-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: #2d3748;
+  color: #f7fafc;
+  border-bottom: 1px solid #4a5568;
+}
+
+.calllist-header {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.calllist-item {
+  flex: 1;
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.calllist-row {
+  font-size: 1rem;
+}
+
+.calllist-container {
+  width: 100%; /* Ensure it matches the width of the upload section */
+}
+
+.calllist {
+  margin-top: 1rem;
+  width: 100%; /* Match the width of the container */
+}
+
+.calllist-header, .calllist-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: #2d3748;
+  color: #f7fafc;
+  border-bottom: 1px solid #4a5568;
+}
+
+.calllist-header {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.calllist-item {
+  flex: 1;
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.calllist-row {
+  font-size: 1rem;
+}
+
+.popup-input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* Add this to your App.css or a relevant CSS file */
+.calllist {
+  background-color: #1a202c; /* Dark background for the table */
+  border-radius: 0.5rem; /* Rounded corners */
+  overflow: hidden; /* Ensures the border-radius is applied */
+}
+
+.calllist-header, .calllist-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem; /* Consistent padding for all rows */
+  border-bottom: 1px solid #2d3748; /* Subtle border between rows */
+  color: #f7fafc; /* Light text color */
+}
+
+.calllist-header {
+  background-color: #2d3748; /* Slightly darker background for the header */
+  font-weight: bold;
+  font-size: 1rem; /* Consistent font size */
+}
+
+.calllist-row {
+  background-color: #1a202c; /* Consistent background color */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.calllist-row:hover {
+  background-color: #2d3748; /* Darker shade on hover */
+}
+
+.calllist-item {
+  flex: 1;
+  text-align: left;
+  padding: 0 0.5rem; /* Horizontal padding for spacing */
+  font-size: 0.875rem; /* Slightly smaller font size for a modern look */
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden; /* Hide overflow text */
+  text-overflow: ellipsis; /* Add ellipsis for overflow text */
+}
+
+/* Ensure no active or focus styles change the color */
+.calllist-row:active,
+.calllist-row:focus {
+  background-color: #1a202c; /* Keep the same color as the default */
+}
+
