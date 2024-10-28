@@ -141,6 +141,8 @@ const saveAndSend = async (data, audioFile1, audioFile2, onProgress = () => {}, 
         const callIndex = dummyCalls.findIndex(call => call.id === callId);
         if (callIndex !== -1) {
           dummyCalls[callIndex] = {...callData};
+        } else {
+          dummyCalls.push({...callData});
         }
       } catch (error) {
         console.error('Error updating call-data.json:', error);
@@ -153,20 +155,25 @@ const saveAndSend = async (data, audioFile1, audioFile2, onProgress = () => {}, 
     const jobId2 = await sendFileToHume(audioFile2, 'rep.wav');
     
     newCall.jobIds = [jobId1, jobId2];
-    dummyCalls.push(newCall);
+    await updateCallDataJson(newCall);
     onJobIdsReceived(newCall);
 
-    // Start polling process with better response handling
-    let responses = { response1: null, response2: null };
-    let conversationProcessed = false;
-
-    const pollJobStatus = async (jobId, responseKey) => {
+    // Polling function with maximum attempts
+    const pollJobStatus = async (jobId, responseKey, responses, onProgress) => {
       return new Promise((resolve, reject) => {
         let attempts = 0;
+        const maxAttempts = 30; // 30 minutes maximum polling time
+        
         const intervalId = setInterval(async () => {
           attempts++;
-          onProgress(`Polling job ${responseKey === 'response1' ? '1' : '2'} (attempt ${attempts})...`);
+          onProgress(`Polling job ${responseKey === 'response1' ? '1' : '2'} (attempt ${attempts}/${maxAttempts})...`);
           
+          if (attempts >= maxAttempts) {
+            clearInterval(intervalId);
+            reject(new Error(`Job ${jobId} timed out after ${maxAttempts} attempts`));
+            return;
+          }
+
           try {
             const response = await fetch(`https://api.hume.ai/v0/batch/jobs/${jobId}/predictions`, {
               method: 'GET',
@@ -176,57 +183,77 @@ const saveAndSend = async (data, audioFile1, audioFile2, onProgress = () => {}, 
               }
             });
 
+            // Handle different response types
+            const responseData = await response.json();
+            
+            // Case 1: Job is still processing
+            if (response.status === 400 && responseData.message === "Job is in progress.") {
+              console.log(`Job ${jobId} still processing... (attempt ${attempts})`);
+              return; // Continue polling
+            }
+            
+            // Case 2: Any other error
             if (!response.ok) {
               clearInterval(intervalId);
-              reject(new Error(`Failed to fetch job status: ${response.status}`));
+              reject(new Error(`Failed to fetch job status: ${response.status} - ${JSON.stringify(responseData)}`));
               return;
             }
 
-            const jobStatus = await response.json();
-
-            if (Array.isArray(jobStatus) && jobStatus.length > 0 && jobStatus[0].source && jobStatus[0].results) {
+            // Case 3: Success with predictions
+            if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].source && responseData[0].results) {
               clearInterval(intervalId);
               
               responses[responseKey] = {
                 callback_response: {
-                  predictions: jobStatus[0].results.predictions
+                  predictions: responseData[0].results.predictions
                 }
               };
 
-              // Only process conversation data when both responses are available
-              if (responses.response1 && responses.response2 && !conversationProcessed) {
-                conversationProcessed = true; // Prevent multiple processing
-                onProgress('Processing complete! Finalizing results...');
-                
-                const conversationData = processCallbackData(responses);
-                if (conversationData && conversationData.conversation) {
-                  newCall.conversation = conversationData.conversation;
-                  newCall.processed = 'Yes';
-
-                  // Wait for merge to complete before final update
-                  await mergePromise;
-                  
-                  // Update both Supabase and dummyCalls
-                  await updateCallDataJson(newCall);
-                }
-              }
-
-              resolve(jobStatus);
+              resolve(responseData);
+              return;
             }
 
+            // Case 4: Unexpected response format
+            console.log(`Unexpected response format for job ${jobId}:`, responseData);
+            
           } catch (error) {
-            clearInterval(intervalId);
-            reject(error);
+            console.error(`Error polling job ${jobId}:`, error);
+            // Don't reject here - let it continue polling unless it's a critical error
+            if (error.name !== 'TypeError' && error.name !== 'NetworkError') {
+              clearInterval(intervalId);
+              reject(error);
+            }
           }
-        }, 60000);
+        }, 60000); // 60 second interval
+
+        // Add cleanup on promise rejection
+        return () => clearInterval(intervalId);
       });
     };
 
-    // Start polling in the background and wait for both to complete
+    // Usage remains the same
+    const responses = { response1: null, response2: null };
+    let conversationProcessed = false;
+
     await Promise.all([
-      pollJobStatus(jobId1, 'response1'),
-      pollJobStatus(jobId2, 'response2')
+      pollJobStatus(jobId1, 'response1', responses, onProgress),
+      pollJobStatus(jobId2, 'response2', responses, onProgress)
     ]);
+
+    // Process results only after both are complete
+    if (responses.response1 && responses.response2 && !conversationProcessed) {
+      conversationProcessed = true;
+      onProgress('Processing complete! Finalizing results...');
+      
+      const conversationData = processCallbackData(responses);
+      if (conversationData && conversationData.conversation) {
+        newCall.conversation = conversationData.conversation;
+        newCall.processed = 'Yes';
+        
+        await mergePromise;
+        await updateCallDataJson(newCall);
+      }
+    }
 
     return {
       callId,

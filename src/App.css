@@ -189,7 +189,7 @@
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  transition: all 0.2s ease-in-out;
 }
 
 .analysis-item h3 {
@@ -198,42 +198,27 @@
   top: 0;
   left: 0;
   margin: 0;
-  background-color: rgb(74, 85, 104);
-  color: #f7fafc;
-  font-size: .8rem;
+  background-color: #2d3748; /* Changed from #4a5568 to match minimal style */
+  color: #a0aec0;  /* Lighter color for modern look */
+  font-size: 0.75rem;  /* Slightly smaller */
   white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  font-weight: bold;
+  font-weight: 500;  /* Medium weight for better readability */
   display: flex;
   align-items: center;
   justify-content: flex-start;
   padding-left: 0.8rem;
-  height: 30px;
+  height: 24px;  /* Reduced from 30px */
   box-sizing: border-box;
+  border-bottom: 1px solid #4a5568;  /* Added subtle border instead of background */
+  letter-spacing: 0.025em;  /* Slight letter spacing */
 }
 
 .analysis-item p {
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;  /* Adjusted to account for new header height */
   display: flex;
   justify-content: center;
   align-items: center;
 }
-
-.analysis-item .celebration-gif {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  margin-top: .5rem;
-}
-
-.analysis-item .celebration-gif img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
 /* Customer journey and conversation */
 .customer-journey-conversation {
   display: grid;
@@ -260,51 +245,32 @@
 }
 
 .customer-sentiment-journey h3 {
-  font-size: 1.2rem; /* Larger font size */
-  font-weight: bold;
   width: 100%;
-  color: #f7fafc; /* Assuming similar color to .analysis-item h3 */
-  background-color: #4a5568; /* Assuming similar background to .analysis-item h3 */
-  padding: 0.5rem 0.5rem .5rem 0.5rem; /* Adjust padding as needed */
-  margin: 0rem 0rem 1.5rem 0rem; /* Remove default margin */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
-  box-sizing: border-box; /* Include padding in the element's total width and height */
-} 
+  font-size: 1rem; /* Slightly larger than analysis items but smaller than current */
+  font-weight: 500;  /* Medium weight for better readability */
+  color: #a0aec0;  /* Lighter color for modern look */
+  background-color: #2d3748; /* Matches container background */
+  padding: 0.75rem 1rem; /* Balanced padding */
+  margin: 0;
+  letter-spacing: 0.025em;  /* Slight letter spacing */
+  border-bottom: 1px solid #4a5568;  /* Subtle separator */
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 
 /* Audio components */
 .audio-timeline {
   background-color: #2d3748;
-  max-height: 50px;
-  padding: 1rem;
+  height: 140px;
   border-radius: 0.25rem;
   border: 1px solid #4a5568;
   color: #f7fafc;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.audio-player {
-  width: stretch;
-  background-color: #2d3748;
-  color: #f7fafc;
-  border-radius: 0.25rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  vertical-align: middle;
-}
-
-.audio-player::-webkit-media-controls-panel {
-  background-color: #2d3748;
-  color: #f7fafc;
-}
-
-.audio-player::-webkit-media-controls-play-button,
-.audio-player::-webkit-media-controls-volume-slider {
-  background-color: #ffffff;
-  border-radius: 0.25rem;
-}
-
-.audio-player::-webkit-media-controls-current-time-display,
-.audio-player::-webkit-media-controls-time-remaining-display {
-  color: #ffffff;
+  display: flex; /* Add this line */
+  justify-content: center; /* Add this line */
+  align-items: center; /* Add this line */
 }
 
 /* Conversation styling */
@@ -324,6 +290,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .message-box {
@@ -341,6 +308,17 @@
 .message-wrapper {
   display: flex;
   margin-bottom: 0.5rem;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  position: relative;
+}
+
+.message-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.message-hidden {
+  opacity: 0.5;
 }
 
 .message-left {
@@ -785,52 +763,6 @@
   padding-bottom: 1rem;
 }
 
-.rep-tone-container div {
-  padding-left: 0.5rem;
-}
-
-/* App.css */
-@keyframes strikethrough {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 50%;
-  }
-}
-
-.strikethrough-container {
-  position: relative;
-  display: inline-block;
-}
-
-.strikethrough-container.active::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: .1rem;
-  width: 30%;
-  height: 2px;
-  background-color: #e53e3e;
-  animation: strikethrough 0.5s ease-in-out forwards;
-}
-
-.fade-text {
-  opacity: 0.6;
-  transition: opacity 0.5s ease-in-out;
-}
-
-.sold-text {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #e53e3e;
-  line-height: 1;
-  letter-spacing: 0.05em;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-}
-
 .analysis-item {
   height: 60px;
   overflow: hidden;
@@ -1066,9 +998,15 @@
 }
 
 .mini-calls-container {
-  max-height: calc(100vh - 280px);
+  max-height: 400px; /* Fixed height for scrolling */
   overflow-y: auto;
-  padding: 0.5rem;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.mini-calls-container::-webkit-scrollbar {
+  display: none;
 }
 
 .mini-call-item {
@@ -1108,6 +1046,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #48bb78;
+  float: right; /* Added to float the element to the right */
 }
 
 .mini-call-secondary {
@@ -1166,3 +1105,345 @@
   background-color: rgba(66, 153, 225, 0.2);
   border-left: 3px solid #4299e1;
 }
+
+/* Mini Search Box Styling */
+.mini-search-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.mini-search-input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #4a5568;
+  background-color: #2d3748;
+  color: #f7fafc;
+  font-size: 0.875rem;
+  outline: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.mini-search-input:focus {
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.6);
+}
+
+/* Menu Section Headers */
+.menu-section-header {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #f7fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  margin: 1rem 0 0.5rem 0; /* Spacing above and below */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-align: left;
+}
+
+/* Percentage value styles */
+.percentage-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  transition: color 0.2s ease-in-out;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Color variations for different states */
+.percentage-success {
+  color: #2300ec; /* Matches the existing success green */
+}
+
+.percentage-warning {
+  color: #f6b100; /* Warmer yellow for better contrast */
+}
+
+.percentage-danger {
+  color: #e53e3e; /* Matches existing red from the app */
+}
+
+/* Hover state enhancement */
+.analysis-item:hover {
+  border-color: #4a5568;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Additional styles for specific metrics */
+.rep-certainty .percentage-value {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.call-control .percentage-value {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.customer-motivation .percentage-value {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-call-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, auto);
+  gap: 0.5rem; /* Adjust as needed */
+}
+
+.mini-call-names {
+  grid-column: 1 / span 3; /* Spans the first three columns */
+  grid-row: 1; /* First row */
+}
+
+.mini-call-sale {
+  grid-column: 4; /* Fourth column */
+  grid-row: 1; /* First row */
+  text-align: right;
+  font-size: 0.75rem; /* Match the font size of .tag */
+  font-weight: bold; /* Match the font weight of .tag */
+  background-color: #4a5568; /* Match the background color of .tag */
+  color: #f7fafc; /* Match the text color of .tag */
+  padding: 0.5rem 1rem; /* Match the padding of .tag */
+  border-radius: 0.25rem; /* Match the border-radius of .tag */
+  white-space: nowrap; /* Match the white-space property of .tag */
+  cursor: pointer; /* Match the cursor property of .tag */
+  transition: background-color 0.3s ease; /* Match the transition of .tag */
+}
+
+.mini-call-date {
+  grid-column: 1 / span 3; /* Spans the first three columns */
+  grid-row: 4; /* Fourth row */
+}
+
+.mini-call-amount {
+  grid-column: 4; /* Fourth column */
+  grid-row: 4; /* Fourth row */
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #48bb78;
+  text-align: right;
+}
+
+.waveform-player {
+  background-color: #2d3748;
+  width: 100%;      
+  height: auto;    
+  min-height: 48px; 
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;     
+  width: 100%;      
+  height: 32px;     
+}
+
+.waveform-section {
+  flex: 1;
+  position: relative;
+  height: 32px;     
+  min-width: 0;
+  overflow: hidden;
+}
+
+.waveform-container {
+  height: 100%;     
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Override WaveSurfer's default canvas styles */
+.waveform-container wave {
+  overflow: hidden !important;
+  max-width: 100% !important;
+}
+
+.waveform-container canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.play-button {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: #f7fafc;
+  width: 32px;      
+  height: 32px;     
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.time-display {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: #a0aec0;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 0.25rem;
+  min-width: 85px;  
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+}
+
+.loading-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: #4299e1;
+  transition: width 0.3s ease;
+}
+
+/* Wave animation for loading state */
+@keyframes loading-pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+  100% { opacity: 0.3; }
+}
+
+.waveform-container.loading {
+  animation: loading-pulse 1.5s ease-in-out infinite;
+}
+
+/* Override default wavesurfer styling */
+wave {
+  overflow: hidden !important;
+  border-radius: 3px;
+}
+
+.play-icon, .pause-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.conversation-messages {
+  scroll-behavior: smooth;
+  overflow-y: auto;
+  height: 100%;
+  padding: 1rem;
+  position: relative;
+}
+
+.message-wrapper {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  position: relative;
+}
+
+.message-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.message-hidden {
+  opacity: 0;
+}
+
+.message-left {
+  justify-content: flex-start;
+}
+
+.message-right {
+  justify-content: flex-end;
+}
+
+.message {
+  max-width: 70%;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  position: relative;
+}
+
+.message-rep {
+  background-color: #3182ce;
+  color: white;
+}
+
+.message-customer {
+  background-color: #48bb78;
+  color: white;
+}
+
+.message-text {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  word-wrap: break-word;
+}
+
+.message-sentiments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.sentiment-tag {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.message-time.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.message-time.clickable:hover {
+  color: #4299e1;
+}
+
+.message-past {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.message-future {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.message-current {
+  background: rgba(66, 153, 225, 0.1);
+  border-radius: 8px;
+  animation: pulse 2s infinite;
+}
+
+/* Add a subtle animation for the current message */
+@keyframes pulse {
+  0% { background: rgba(66, 153, 225, 0.1); }
+  50% { background: rgba(66, 153, 225, 0.2); }
+  100% { background: rgba(66, 153, 225, 0.1); }
+}
+

@@ -2,7 +2,6 @@ import { supabase } from './supabaseClient';
 
 export const fetchDecodedCalls = async () => {
   try {
-    // List all folders in the calls directory of the call-recordings bucket
     const { data: callFolders, error: listError } = await supabase
       .storage
       .from('call-recordings')
@@ -12,7 +11,6 @@ export const fetchDecodedCalls = async () => {
       throw listError;
     }
 
-    // Process each call folder
     const callsData = await Promise.all(callFolders.map(async (folder) => {
       try {
         // Get the call-data.json file for each call
@@ -30,33 +28,17 @@ export const fetchDecodedCalls = async () => {
         const text = await jsonData.text();
         const callData = JSON.parse(text);
 
-        // Get signed URLs for audio files if they exist
+        // Store paths directly without creating signed URLs here
         if (callData.audioFiles) {
+          // Store clean paths without bucket prefix
           if (callData.audioFiles.merged) {
-            const { data: { signedUrl: mergedUrl } } = await supabase
-              .storage
-              .from('call-recordings')
-              .createSignedUrl(callData.audioFiles.merged, 3600); // 1 hour expiry
-
-            callData.audioFiles.merged = mergedUrl;
+            callData.audioFiles.merged = `calls/${folder.name}/audio/merged.webm`;
           }
-
           if (callData.audioFiles.customer) {
-            const { data: { signedUrl: customerUrl } } = await supabase
-              .storage
-              .from('call-recordings')
-              .createSignedUrl(callData.audioFiles.customer, 3600);
-
-            callData.audioFiles.customer = customerUrl;
+            callData.audioFiles.customer = `calls/${folder.name}/audio/customer.webm`;
           }
-
           if (callData.audioFiles.rep) {
-            const { data: { signedUrl: repUrl } } = await supabase
-              .storage
-              .from('call-recordings')
-              .createSignedUrl(callData.audioFiles.rep, 3600);
-
-            callData.audioFiles.rep = repUrl;
+            callData.audioFiles.rep = `calls/${folder.name}/audio/rep.webm`;
           }
         }
 
@@ -67,7 +49,6 @@ export const fetchDecodedCalls = async () => {
       }
     }));
 
-    // Filter out any null values from failed processing and sort by upload date
     const validCalls = callsData
       .filter(call => call !== null)
       .sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
@@ -79,41 +60,77 @@ export const fetchDecodedCalls = async () => {
   }
 };
 
-export const fetchAudioFromBucket = async (audioUrl) => {
+export const fetchAudioFromBucket = async (path) => {
   try {
-    // If the URL is already a signed URL, return it directly
-    if (audioUrl.includes('token=')) {
-      return audioUrl;
+    if (!path) {
+      console.error('No path provided to fetchAudioFromBucket');
+      return null;
     }
 
-    // Otherwise, create a new signed URL
-    const { data: { signedUrl }, error } = await supabase
+    // Clean the path
+    let cleanPath = path;
+
+    // If it's a full URL, extract the path
+    if (cleanPath.startsWith('https://')) {
+      try {
+        const urlObj = new URL(cleanPath);
+        cleanPath = urlObj.pathname.split('/storage/v1/object/sign/call-recordings/')[1]?.split('?')[0] || cleanPath;
+      } catch (e) {
+        console.error('Error parsing URL:', e);
+      }
+    }
+
+    // Remove any leading slashes
+    cleanPath = cleanPath.replace(/^\/+/, '');
+
+    // Remove bucket name if it's at the start of the path
+    if (cleanPath.startsWith('call-recordings/')) {
+      cleanPath = cleanPath.replace('call-recordings/', '');
+    }
+
+    console.log('Requesting signed URL for clean path:', cleanPath);
+
+    // Get the signed URL
+    const { data, error } = await supabase
       .storage
       .from('call-recordings')
-      .createSignedUrl(audioUrl, 3600); // 1 hour expiry
+      .createSignedUrl(cleanPath, 7200, {
+        download: false
+      });
 
     if (error) {
-      throw error;
+      console.error('Error getting signed URL:', error);
+      return null;
     }
 
-    return signedUrl;
+    if (!data?.signedUrl) {
+      console.error('No signed URL returned');
+      return null;
+    }
+
+    // Add streaming parameters
+    const finalUrl = new URL(data.signedUrl);
+    finalUrl.searchParams.set('cache-control', 'no-cache, no-store, must-revalidate');
+    finalUrl.searchParams.set('pragma', 'no-cache');
+    finalUrl.searchParams.set('expires', '0');
+    finalUrl.searchParams.set('_streaming', 'true');
+
+    console.log('Created streaming URL:', finalUrl.toString());
+    return finalUrl.toString();
   } catch (error) {
-    console.error('Error fetching audio from bucket:', error);
-    throw error;
+    console.error('Error in fetchAudioFromBucket:', error);
+    return null;
   }
 };
 
-// Helper function to check if new calls are available
 export const checkForNewCalls = async (currentCalls) => {
   try {
     const latestCalls = await fetchDecodedCalls();
     
-    // Compare the number of calls
     if (latestCalls.length !== currentCalls.length) {
       return true;
     }
 
-    // Compare the latest call IDs
     const currentIds = new Set(currentCalls.map(call => call.id));
     const hasNewCalls = latestCalls.some(call => !currentIds.has(call.id));
 
@@ -124,35 +141,26 @@ export const checkForNewCalls = async (currentCalls) => {
   }
 };
 
-// Function to refresh signed URLs for a specific call
 export const refreshCallUrls = async (callData) => {
   try {
     if (!callData.audioFiles) return callData;
 
     const updatedAudioFiles = { ...callData.audioFiles };
 
+    // Instead of splitting URLs, use the paths directly
     if (updatedAudioFiles.merged) {
-      const { data: { signedUrl: mergedUrl } } = await supabase
-        .storage
-        .from('call-recordings')
-        .createSignedUrl(updatedAudioFiles.merged.split('?')[0], 3600);
-      updatedAudioFiles.merged = mergedUrl;
+      const mergedUrl = await fetchAudioFromBucket(updatedAudioFiles.merged);
+      if (mergedUrl) updatedAudioFiles.merged = mergedUrl;
     }
 
     if (updatedAudioFiles.customer) {
-      const { data: { signedUrl: customerUrl } } = await supabase
-        .storage
-        .from('call-recordings')
-        .createSignedUrl(updatedAudioFiles.customer.split('?')[0], 3600);
-      updatedAudioFiles.customer = customerUrl;
+      const customerUrl = await fetchAudioFromBucket(updatedAudioFiles.customer);
+      if (customerUrl) updatedAudioFiles.customer = customerUrl;
     }
 
     if (updatedAudioFiles.rep) {
-      const { data: { signedUrl: repUrl } } = await supabase
-        .storage
-        .from('call-recordings')
-        .createSignedUrl(updatedAudioFiles.rep.split('?')[0], 3600);
-      updatedAudioFiles.rep = repUrl;
+      const repUrl = await fetchAudioFromBucket(updatedAudioFiles.rep);
+      if (repUrl) updatedAudioFiles.rep = repUrl;
     }
 
     return {

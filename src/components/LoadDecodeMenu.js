@@ -1,4 +1,3 @@
-// src/components/LoadDecodeMenu.js
 import React, { useState, useEffect } from 'react';
 import { Upload, RefreshCw, Check, Clock } from 'lucide-react';
 import { fetchDecodedCalls } from '../supapopulate';
@@ -9,10 +8,14 @@ const LoadDecodeMenu = ({
   onCallSelect, 
   selectedCall, 
   setActiveMenu,
-  onFilesSelected  // New prop for notifying parent of file uploads
+  onFilesSelected 
 }) => {
-  const [file1, setFile1] = useState(null);
-  const [file2, setFile2] = useState(null);
+  const [file1Stream, setFile1Stream] = useState(null);
+  const [file2Stream, setFile2Stream] = useState(null);
+  const [file1Name, setFile1Name] = useState('');
+  const [file2Name, setFile2Name] = useState('');
+  const [file1Data, setFile1Data] = useState(null);
+  const [file2Data, setFile2Data] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pollingProgress, setPollingProgress] = useState('');
@@ -26,8 +29,9 @@ const LoadDecodeMenu = ({
     product: 'Youthful Brain',
     saleAmount: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredCalls, setFilteredCalls] = useState([]);
 
-  // Fetch calls on component mount and when menu opens
   useEffect(() => {
     if (isOpen) {
       refreshCalls();
@@ -46,19 +50,76 @@ const LoadDecodeMenu = ({
     }
   };
 
-  const handleFileUpload = (event, fileNumber) => {
+  useEffect(() => {
+    const searchLower = searchQuery.toLowerCase();
+    const updatedCalls = availableCalls.filter((call) => 
+      Object.values(call).some(
+        (value) =>
+          typeof value === 'string' &&
+          value.toLowerCase().includes(searchLower)
+      )
+    );
+    setFilteredCalls(updatedCalls);
+  }, [searchQuery, availableCalls]);
+
+  const handleFileUpload = async (event, fileNumber) => {
     const file = event.target.files[0];
     if (!file || !file.type.startsWith('audio/')) return;
-    if (fileNumber === 1) setFile1(file);
-    else setFile2(file);
+
+    try {
+      // Create a MediaSource instance for preview
+      const mediaSource = new MediaSource();
+      const audioUrl = URL.createObjectURL(mediaSource);
+
+      mediaSource.addEventListener('sourceopen', async () => {
+        const mimeType = 'audio/webm; codecs=opus';
+        const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+
+        const stream = file.stream();
+        const reader = stream.getReader();
+
+        const readChunk = async () => {
+          const { done, value } = await reader.read();
+          if (done) {
+            mediaSource.endOfStream();
+            return;
+          }
+
+          if (!sourceBuffer.updating) {
+            sourceBuffer.appendBuffer(value);
+          } else {
+            await new Promise((resolve) => {
+              sourceBuffer.addEventListener('updateend', resolve, { once: true });
+            });
+            readChunk();
+          }
+        };
+
+        readChunk();
+      });
+
+      if (fileNumber === 1) {
+        setFile1Stream(audioUrl);
+        setFile1Name(file.name);
+        setFile1Data(file); // Store the actual File object
+      } else {
+        setFile2Stream(audioUrl);
+        setFile2Name(file.name);
+        setFile2Data(file); // Store the actual File object
+      }
+    } catch (error) {
+      console.error('Error setting up stream:', error);
+    }
   };
 
-  const handleDrop = (event, fileNumber) => {
+  const handleDrop = async (event, fileNumber) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (!file || !file.type.startsWith('audio/')) return;
-    if (fileNumber === 1) setFile1(file);
-    else setFile2(file);
+    
+    // Use the same file upload handler for dropped files
+    const fakeEvent = { target: { files: [file] } };
+    await handleFileUpload(fakeEvent, fileNumber);
   };
 
   const handleInputChange = (e) => {
@@ -67,21 +128,23 @@ const LoadDecodeMenu = ({
   };
 
   const handleSubmit = async () => {
-    if (!file1 || !file2) return;
+    if (!file1Stream || !file2Stream) return;
     
     setLoading(true);
     try {
-      // Your existing form submission logic here
-      setPollingProgress('Processing files...');
-      // Simulate processing time
+      setPollingProgress('Processing streams...');
       await new Promise(resolve => setTimeout(resolve, 2000));
       setPollingProgress('Decoding audio...');
-      // Simulate more processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Reset form after successful submission
-      setFile1(null);
-      setFile2(null);
+      // Clean up streams
+      if (file1Stream) URL.revokeObjectURL(file1Stream);
+      if (file2Stream) URL.revokeObjectURL(file2Stream);
+      
+      setFile1Stream(null);
+      setFile2Stream(null);
+      setFile1Name('');
+      setFile2Name('');
       setFormData({
         repName: '',
         customerName: '',
@@ -99,31 +162,54 @@ const LoadDecodeMenu = ({
   };
 
   const handleCallClick = (call) => {
-    // Switch to dashboard view and update selected call
     setActiveMenu('Dashboard');
     onCallSelect(call);
-    // Note: Removed the onClose() call to keep the menu open
   };
 
-  // Monitor file uploads and notify parent component
-  useEffect(() => {
-    if (file1 && file2) {
-      onFilesSelected(file1, file2);
+  const handleFilesReady = async () => {
+    if (file1Stream && file2Stream) {
+      setPollingProgress('Processing streams...');
+      await handleSubmit();
     }
-  }, [file1, file2, onFilesSelected]);
+  };
+
+  useEffect(() => {
+    handleFilesReady();
+  }, [file1Stream, file2Stream]);
+
+  useEffect(() => {
+    if (file1Stream && file2Stream) {
+      setShowPopup(true);
+      onFilesSelected({
+        streams: { file1: file1Stream, file2: file2Stream },
+        files: { file1: file1Data, file2: file2Data },
+        names: { file1: file1Name, file2: file2Name }
+      });
+    }
+    
+    // Cleanup function to revoke object URLs when component unmounts
+    return () => {
+      if (file1Stream) URL.revokeObjectURL(file1Stream);
+      if (file2Stream) URL.revokeObjectURL(file2Stream);
+    };
+  }, [file1Stream, file2Stream, file1Data, file2Data, file1Name, file2Name, onFilesSelected]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   return (
     <div className={`slide-menu ${isOpen ? 'open' : ''}`}>
       <div className="slide-menu-content">
+        <h3 className="menu-section-header">Decode Call</h3>
         <div className="upload-mini-grid">
-          {/* Upload containers */}
           <div 
-            className={`upload-mini-container ${file1 ? 'upload-success' : ''}`}
+            className={`upload-mini-container ${file1Stream ? 'upload-success' : ''}`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(e, 1)}
           >
-            {file1 ? (
-              <p className="upload-success-text">{file1.name}</p>
+            {file1Stream ? (
+              <p className="upload-success-text">{file1Name}</p>
             ) : (
               <>
                 <Upload className="upload-mini-icon" size={18} />
@@ -143,12 +229,12 @@ const LoadDecodeMenu = ({
           </div>
 
           <div 
-            className={`upload-mini-container ${file2 ? 'upload-success' : ''}`}
+            className={`upload-mini-container ${file2Stream ? 'upload-success' : ''}`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(e, 2)}
           >
-            {file2 ? (
-              <p className="upload-success-text">{file2.name}</p>
+            {file2Stream ? (
+              <p className="upload-success-text">{file2Name}</p>
             ) : (
               <>
                 <Upload className="upload-mini-icon" size={18} />
@@ -167,9 +253,19 @@ const LoadDecodeMenu = ({
             )}
           </div>
         </div>
-        
+
+        <h3 className="menu-section-header">Load Call</h3>
+        <div className="mini-search-box">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search calls..."
+            className="mini-search-input"
+          />
+        </div>
+
         <div className="mini-calls-list">
-          {/* Calls list content */}
           <div className="mini-calls-header">
             <h3>Recent Calls</h3>
             <button 
@@ -180,9 +276,8 @@ const LoadDecodeMenu = ({
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
-          
           <div className="mini-calls-container">
-            {availableCalls.map((call, index) => (
+            {filteredCalls.map((call) => (
               <div 
                 key={call.id} 
                 className={`mini-call-item ${selectedCall?.id === call.id ? 'selected' : ''}`}
@@ -192,37 +287,20 @@ const LoadDecodeMenu = ({
                   <div className="mini-call-names">
                     {call.customer} - {call.rep}
                   </div>
-                  <div className="mini-call-details">
-                    <span className="mini-call-date">
-                      {new Date(call.uploadDate).toLocaleDateString()}
-                    </span>
-                    <span className="mini-call-amount">${call.saleAmount}</span>
-                    <div className="mini-call-status">
-                      {call.processed === 'Yes' ? (
-                        <>
-                          <Check size={14} className="text-green-500" />
-                          <span>Processed</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock size={14} className="text-yellow-500" />
-                          <span>Processing</span>
-                        </>
-                      )}
-                    </div>
+                  <div className="mini-call-sale">
+                    {call.sale}
+                  </div>
+                  <div className="mini-call-date">
+                    {new Date(call.uploadDate).toLocaleDateString()}
+                  </div>
+                  <div className="mini-call-amount">
+                    ${call.saleAmount}
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
-        {(file1 || file2) && (
-          <div className="mini-form">
-            {/* Form content */}
-            {/* Your existing form content... */}
-          </div>
-        )}
       </div>
     </div>
   );

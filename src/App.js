@@ -15,6 +15,8 @@ import saveAndSend from './saveandsend';
 import { getAudioStream, updateAudioTimestamp } from './grabaudioplay';
 import { fetchDecodedCalls, fetchAudioFromBucket } from './supapopulate';
 import LoadDecodeMenu from './components/LoadDecodeMenu'; // Add this import at the top
+import WaveformPlayer from './components/WaveformPlayer'; // First, import the WaveformPlayer at the top of App.js
+import { ClickableTimestamp } from './components/msg2aud';
 
 const TWO_MINUTES = 120;
 
@@ -59,7 +61,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // Sidebar component
 const Sidebar = ({ activeMenu, setActiveMenu, onLoadDecodeClick, isLoadDecodeOpen }) => {
-  const menuItems = ['Dashboard', 'Decoded Calls'];
+  // Remove 'Decoded Calls' from menuItems since we'll place it separately
+  const menuItems = ['Dashboard'];
 
   return (
     <div className="sidebar">
@@ -75,9 +78,15 @@ const Sidebar = ({ activeMenu, setActiveMenu, onLoadDecodeClick, isLoadDecodeOpe
       ))}
       <button
         onClick={onLoadDecodeClick}
-        className={`load-decode-button ${isLoadDecodeOpen ? 'active' : ''}`} // Updated line
+        className={`load-decode-button ${isLoadDecodeOpen ? 'active' : ''}`}
       >
         Load & Decode
+      </button>
+      <button
+        className={activeMenu === 'Decoded Calls' ? 'active' : ''}
+        onClick={() => setActiveMenu('Decoded Calls')}
+      >
+        Decoded Calls
       </button>
     </div>
   );
@@ -106,8 +115,125 @@ const Dashboard = ({
   isRefreshing,
   audioRef,
   setCurrentTime,
-  onDropdownOpen
+  onDropdownOpen,
+  onTimeUpdate,
+  onSkip
 }) => {
+  const [audioUrl, setAudioUrl] = useState(null);
+  const waveformRef = useRef(null);
+  
+  // Add this function in the Dashboard component
+  const getVisibleMessagesScrollPosition = (timeRange) => {
+    if (!chatBoxRef.current || !chatData.length) return;
+
+    // Get all messages within the time range
+    const visibleMessages = chatData.filter(msg => 
+      msg.timestamp >= timeRange[0] && msg.timestamp <= timeRange[1]
+    );
+
+    if (!visibleMessages.length) return;
+
+    // Get the middle timestamp of the visible range
+    const middleTime = timeRange[0] + (timeRange[1] - timeRange[0]) / 2;
+
+    // Find the message closest to the middle time
+    const targetMessage = visibleMessages.reduce((prev, curr) => {
+      return Math.abs(curr.timestamp - middleTime) < Math.abs(prev.timestamp - middleTime) ? curr : prev;
+    });
+
+    const messageIndex = chatData.indexOf(targetMessage);
+    const messageElement = document.querySelector(`#message-${messageIndex}`);
+
+    if (messageElement && chatBoxRef.current) {
+      // Calculate the scroll position to center the target message
+      const containerHeight = chatBoxRef.current.clientHeight;
+      const messageTop = messageElement.offsetTop;
+      const messageHeight = messageElement.offsetHeight;
+      
+      // Center the message vertically in the container
+      const scrollPosition = messageTop - (containerHeight / 2) + (messageHeight / 2);
+      
+      return {
+        scrollTarget: scrollPosition,
+        messageIndex: messageIndex
+      };
+    }
+
+    return null;
+  };
+
+  // Update the handleTimeChange function
+  const handleTimeChange = (newTime) => {
+    // Update the visible time range for the graph
+    const newStart = Math.max(0, newTime - TWO_MINUTES / 2);
+    const newEnd = newStart + TWO_MINUTES;
+    setVisibleTimeRange([newStart, newEnd]);
+    
+    // Find the message closest to the current time
+    const currentMessage = chatData.find((msg, index) => {
+      const nextMsg = chatData[index + 1];
+      return msg.timestamp <= newTime && (!nextMsg || nextMsg.timestamp > newTime);
+    });
+    
+    // Scroll to the current message
+    if (currentMessage && chatBoxRef.current) {
+      const messageIndex = chatData.indexOf(currentMessage);
+      const messageElement = document.querySelector(`#message-${messageIndex}`);
+      
+      if (messageElement) {
+        // Calculate scroll position to center the current message
+        const containerHeight = chatBoxRef.current.clientHeight;
+        const messageTop = messageElement.offsetTop;
+        const messageHeight = messageElement.offsetHeight;
+        const scrollPosition = messageTop - (containerHeight / 2) + (messageHeight / 2);
+        
+        chatBoxRef.current.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+
+        // Update visual indicators
+        document.querySelectorAll('.message-wrapper').forEach(msg => {
+          msg.classList.remove('message-current');
+        });
+        messageElement.classList.add('message-current');
+      }
+    }
+  };
+
+  // Handler for range slider changes
+  const handleRangeChange = (e) => {
+    const newStart = Number(e.target.value);
+    const newTime = newStart + TWO_MINUTES / 2;
+    
+    // Update waveform position
+    if (waveformRef.current) {
+      waveformRef.current.seekTo(newTime);
+    }
+    
+    handleTimeChange(newTime);
+  };
+
+  // Add useEffect to handle audio URL updates
+  useEffect(() => {
+    const loadAudioUrl = async () => {
+      if (selectedCall?.audioFiles?.merged) {
+        try {
+          const url = await fetchAudioFromBucket(selectedCall.audioFiles.merged);
+          console.log('Fetched audio URL in Dashboard:', url);
+          setAudioUrl(url);
+        } catch (error) {
+          console.error('Error loading audio URL in Dashboard:', error);
+          setAudioUrl(null);
+        }
+      } else {
+        setAudioUrl(null);
+      }
+    };
+
+    loadAudioUrl();
+  }, [selectedCall]);
+
   const processedCalls = availableCalls.filter(call => call.processed === 'Yes');
   console.log('Available calls:', availableCalls);
   console.log('Processed calls:', processedCalls);
@@ -129,7 +255,7 @@ const Dashboard = ({
               {processedCalls.map((call) => {
                 console.log('Rendering option for call:', call);
                 return (
-                  <option key={call.id} value={call.id}>  // Changed from index to call.id
+                  <option key={call.id} value={call.id}>  
                     {`${call.customer} - ${call.rep} - $${call.saleAmount}`}
                   </option>
                 );
@@ -203,32 +329,26 @@ const Dashboard = ({
 
         {/* Audio Timeline */}
         <div className="audio-timeline">
-          <audio 
-            ref={audioRef}
-            controls 
-            className="audio-player"
-            onLoadStart={() => {
-              console.log('Audio loading started');
-            }}
-            onCanPlay={() => {
-              console.log('Audio ready to play');
-            }}
-            onError={(e) => {
-              console.error('Audio error:', e);
-            }}
-          />
+          {audioUrl && (
+            <WaveformPlayer 
+              ref={waveformRef}
+              audioUrl={audioUrl}
+              onTimeUpdate={handleTimeChange}
+              className="audio-player"
+            />
+          )}
         </div>
 
         {/* Customer Journey and Conversation */}
         <div className="customer-journey-conversation">
           <div className="customer-sentiment-journey">
             <h3>Customer Sentiment Journey</h3>
-            <ResponsiveContainer width="95%" height={290}>
+            <ResponsiveContainer width="95%" height={340}>
               <LineChart
                 data={customerJourneyData.filter(
                   item => item.time >= visibleTimeRange[0] && item.time <= visibleTimeRange[1]
                 )}
-                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                margin={{ top: 40, right: 30, left: 0, bottom: 15 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#4a5568" />
                 <XAxis
@@ -256,21 +376,6 @@ const Dashboard = ({
                 />
               </LineChart>
             </ResponsiveContainer>
-            <input
-              type="range"
-              className="custom-range-slider"
-              min="0"
-              max={Math.max(0, Math.floor(customerJourneyData[customerJourneyData.length - 1]?.time || 0) - TWO_MINUTES)}
-              value={visibleTimeRange[0]}
-              onChange={(e) => {
-                const newStart = Number(e.target.value);
-                setVisibleTimeRange([newStart, newStart + TWO_MINUTES]);
-                if (audioRef.current) {
-                  audioRef.current.currentTime = newStart + TWO_MINUTES / 2;
-                }
-              }}
-              style={{ width: '95%', marginTop: '0.5rem' }}
-            />
           </div>
 
           <div className="conversation-container">
@@ -288,12 +393,20 @@ const Dashboard = ({
                     <div
                       key={index}
                       id={`message-${index}`}
-                      className={`message-wrapper ${message.speaker === 'Rep' ? 'message-left' : 'message-right'} ${
-                        message.timestamp >= visibleTimeRange[0] && 
-                        message.timestamp <= visibleTimeRange[1] ? 
-                        'message-visible' : ''
-                      }`}
+                      className={`message-wrapper 
+                        ${message.speaker === 'Rep' ? 'message-left' : 'message-right'}
+                        ${message.timestamp >= visibleTimeRange[0] && message.timestamp <= visibleTimeRange[1] 
+                          ? 'message-visible' 
+                          : message.timestamp < visibleTimeRange[0] 
+                            ? 'message-past' 
+                            : 'message-future'
+                        }`}
                       data-timestamp={message.timestamp}
+                      style={{
+                        opacity: message.timestamp >= visibleTimeRange[0] && 
+                                message.timestamp <= visibleTimeRange[1] ? 1 : 0.5,
+                        position: 'relative'
+                      }}
                     >
                       <div className={`message ${message.speaker === 'Rep' ? 'message-rep' : 'message-customer'}`}>
                         <p className="message-text">{message.message}</p>
@@ -304,16 +417,13 @@ const Dashboard = ({
                             </span>
                           ))}
                         </div>
-                        <span
-                          className="message-time"
-                          onClick={() => {
-                            if (audioRef.current) {
-                              audioRef.current.currentTime = message.timestamp;
-                            }
-                          }}
-                        >
-                          {formatTime(message.timestamp)}
-                        </span>
+                        <ClickableTimestamp
+                          timestamp={message.timestamp}
+                          waveformRef={waveformRef}
+                          chatBoxRef={chatBoxRef}
+                          chatData={chatData}
+                          setVisibleTimeRange={setVisibleTimeRange}
+                        />
                       </div>
                     </div>
                   ))
@@ -322,9 +432,8 @@ const Dashboard = ({
             </div>
             <SkipButtons
               chatData={chatData}
-              setVisibleTimeRange={setVisibleTimeRange}
               buttonConfigs={buttonConfigs}
-              chatBoxRef={chatBoxRef}
+              onSkip={onSkip}  // Pass the skip handler here
             />
           </div>
         </div>
@@ -379,7 +488,7 @@ const AnalysisGrid = ({ repCertaintyScore, callControlScore, customerMotivation,
   return (
     <div className="analysis-grid">
       <div className="analysis-item">
-        <h3 className={`strikethrough-container ${isSale ? 'active fade-text' : ''}`}>
+        <h3>
           Customer Objection Reason
         </h3>
         <p></p> 
@@ -456,6 +565,13 @@ const CallList = ({ availableCalls }) => {
 
 
 const App = () => {
+  // Update the state declarations
+  const [fileData, setFileData] = useState({
+    streams: { file1: null, file2: null },
+    files: { file1: null, file2: null },
+    names: { file1: '', file2: '' }
+  });
+
   // State declarations
   const [selectedCall, setSelectedCall] = useState('Call 1');
   const [currentTime, setCurrentTime] = useState(0);
@@ -474,8 +590,6 @@ const App = () => {
   const [audio, setAudio] = useState(null);
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [file1, setFile1] = useState(null);
-  const [file2, setFile2] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [formData, setFormData] = useState({
     repName: '',
@@ -525,10 +639,6 @@ const App = () => {
         console.log('No call selected, resetting state');
         setSelectedCall(null);
         resetMetrics();
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-        }
         return;
       }
 
@@ -536,22 +646,8 @@ const App = () => {
       console.log('Found call data:', callData);
 
       if (callData && callData.conversation) {
+        // Remove the audio URL fetching from here since it's now handled in Dashboard
         setSelectedCall(callData);
-
-        // Fetch audio URL from Supabase bucket
-        if (audioRef.current && callData.audioFiles?.merged) {
-          try {
-            const audioUrl = await fetchAudioFromBucket(callData.audioFiles.merged);
-            console.log('Fetched audio URL:', audioUrl);
-            if (audioUrl) {
-              audioRef.current.src = audioUrl;
-            } else {
-              console.error('Failed to get audio URL');
-            }
-          } catch (error) {
-            console.error('Error loading audio URL:', error);
-          }
-        }
 
         // Process conversation data for metrics
         const conversation = callData.conversation;
@@ -694,9 +790,17 @@ const App = () => {
     }
 
     if (fileNumber === 1) {
-      setFile1(uploadedFile);
+      setFileData({
+        streams: { file1: uploadedFile, file2: null },
+        files: { file1: uploadedFile, file2: null },
+        names: { file1: uploadedFile.name, file2: '' }
+      });
     } else if (fileNumber === 2) {
-      setFile2(uploadedFile);
+      setFileData({
+        streams: { file1: null, file2: uploadedFile },
+        files: { file1: null, file2: uploadedFile },
+        names: { file1: '', file2: uploadedFile.name }
+      });
     }
   };
 
@@ -712,17 +816,25 @@ const App = () => {
     }
 
     if (fileNumber === 1) {
-      setFile1(droppedFile);
+      setFileData({
+        streams: { file1: droppedFile, file2: null },
+        files: { file1: droppedFile, file2: null },
+        names: { file1: droppedFile.name, file2: '' }
+      });
     } else if (fileNumber === 2) {
-      setFile2(droppedFile);
+      setFileData({
+        streams: { file1: null, file2: droppedFile },
+        files: { file1: null, file2: droppedFile },
+        names: { file1: '', file2: droppedFile.name }
+      });
     }
   };
 
   useEffect(() => {
-    if (file1 && file2) {
+    if (fileData.files.file1 && fileData.files.file2) {
       setShowPopup(true);
     }
-  }, [file1, file2]);
+  }, [fileData.files.file1, fileData.files.file2]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -730,6 +842,7 @@ const App = () => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
+  // Update the handleFormSubmit function
   const handleFormSubmit = async () => {
     console.log('Form submission started');
     try {
@@ -737,31 +850,29 @@ const App = () => {
       setIsPolling(true);
       setPollingProgress('Uploading files...');
       
-      if (!file1 || !file2) {
+      if (!fileData.files.file1 || !fileData.files.file2) {
         console.error('Both audio files are required');
         return;
       }
 
-      // Pass both the progress callback and a new callback for when job IDs are received
+      // Pass the actual File objects to saveAndSend
       await saveAndSend(
         formData, 
-        file1, 
-        file2, 
+        fileData.files.file1, 
+        fileData.files.file2, 
         (status) => {
           console.log(`Progress update: ${status}`);
           setPollingProgress(status);
         },
         (newCall) => {
-          // This callback is called when job IDs are received
           console.log('Job IDs received, updating UI');
-          
-          // Update saved calls
           setSavedCalls(prevCalls => [...prevCalls, formData]);
-          
-          // Clear form and close popup
           setShowPopup(false);
-          setFile1(null);
-          setFile2(null);
+          setFileData({
+            streams: { file1: null, file2: null },
+            files: { file1: null, file2: null },
+            names: { file1: '', file2: '' }
+          });
           setFormData({
             repName: '',
             customerName: '',
@@ -770,16 +881,10 @@ const App = () => {
             product: 'Youthful Brain',
             saleAmount: '',
           });
-          
-          // Refresh the available calls list
           refreshAvailableCalls();
-          
-          // If we're not on the dashboard, switch to it to show the new call
           if (activeMenu !== 'Dashboard') {
             setActiveMenu('Dashboard');
           }
-          
-          // Select the newly added call
           setSelectedCall(newCall);
         }
       );
@@ -863,6 +968,42 @@ const App = () => {
     console.log('Available calls updated:', availableCalls);
   }, [availableCalls]);
 
+  // New function to handle time updates from WaveformPlayer
+  const handleAudioTimeUpdate = (currentTime) => {
+    setCurrentTime(currentTime);
+    
+    const newStart = Math.max(0, currentTime - TWO_MINUTES / 2);
+    const newEnd = newStart + TWO_MINUTES;
+    setVisibleTimeRange([newStart, newEnd]);
+    
+    // Find the current message based on timestamp
+    const currentMessage = chatData.find((msg, index) => {
+      const nextMsg = chatData[index + 1];
+      return msg.timestamp <= currentTime && (!nextMsg || nextMsg.timestamp > currentTime);
+    });
+    
+    // Scroll to current message if found
+    if (currentMessage && chatBoxRef.current) {
+      const messageIndex = chatData.indexOf(currentMessage);
+      const messageElement = document.querySelector(`#message-${messageIndex}`);
+      if (messageElement) {
+        chatBoxRef.current.scrollTo({
+          top: messageElement.offsetTop - chatBoxRef.current.offsetHeight / 2,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
+  const handleSkip = (timestamp) => {
+    // Update the audio player time
+    if (audioRef.current) {
+      audioRef.current.currentTime = timestamp;
+    }
+    // Update everything else through the time update handler
+    handleAudioTimeUpdate(timestamp);
+  };
+
   return (
     <div className="bigboom-container">
       <div className="meta-container">
@@ -874,6 +1015,7 @@ const App = () => {
             isLoadDecodeOpen={isLoadDecodeOpen}
           />
         </div>
+
         <LoadDecodeMenu 
           isOpen={isLoadDecodeOpen}
           onClose={() => setIsLoadDecodeOpen(false)}
@@ -883,12 +1025,12 @@ const App = () => {
           }}
           selectedCall={selectedCall}
           setActiveMenu={setActiveMenu}
-          onFilesSelected={(file1, file2) => {
-            setFile1(file1);
-            setFile2(file2);
+          onFilesSelected={(fileInfo) => {
+            setFileData(fileInfo);
             setShowPopup(true);
           }}
         />
+
         <div className={`main-content ${isLoadDecodeOpen ? 'menu-open' : ''}`}>
           {activeMenu === 'Dashboard' && (
             <Dashboard
@@ -915,165 +1057,98 @@ const App = () => {
               audioRef={audioRef}
               setCurrentTime={setCurrentTime}
               onDropdownOpen={handleDropdownOpen}
+              onTimeUpdate={handleAudioTimeUpdate}
+              onSkip={handleSkip}  // Pass the skip handler here too
             />
           )}
-          {activeMenu === 'Decoded Calls' && (
-            <div className="calllist-container">
-              <div className="upload-grid">
-                <div 
-                  className={`upload-container ${file1 ? 'upload-success' : ''}`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(e, 1)}
-                >
-                  {file1 ? (
-                    <p className="upload-success-text">Upload Success: {file1.name}</p>
-                  ) : (
-                    <>
-                      <Upload className="upload-icon" />
-                      <p className="upload-text">Drag and drop your first audio file here, or</p>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 1)}
-                        id="file-upload-1"
-                        accept="audio/*"
-                        required
-                      />
-                      <label
-                        htmlFor="file-upload-1"
-                        className="upload-label"
-                      >
-                        Select first file
-                      </label>
-                    </>
-                  )}
-                </div>
 
-                <div 
-                  className={`upload-container ${file2 ? 'upload-success' : ''}`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(e, 2)}
+          {/* Move the Popup out of Dashboard and directly under main-content */}
+          {showPopup && (
+            <>
+              <div className="popup-overlay" onClick={() => !loading && setShowPopup(false)} />
+              <div className="popup">
+                <h3>Enter Call Details</h3>
+                <input
+                  type="text"
+                  name="repName"
+                  placeholder="Rep Name"
+                  value={formData.repName}
+                  onChange={handleInputChange}
+                  className="popup-input"
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  name="customerName"
+                  placeholder="Customer Name"
+                  value={formData.customerName}
+                  onChange={handleInputChange}
+                  className="popup-input"
+                  disabled={loading}
+                />
+                <input
+                  type="number"
+                  name="saleAmount"
+                  placeholder="Sale Amount"
+                  value={formData.saleAmount}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  min="0"
+                  className="popup-input"
+                  disabled={loading}
+                />
+                <select
+                  name="saleStatus"
+                  value={formData.saleStatus}
+                  onChange={handleInputChange}
+                  className="popup-input"
+                  disabled={loading}
                 >
-                  {file2 ? (
-                    <p className="upload-success-text">Upload Success: {file2.name}</p>
+                  <option value="Sale">Sold</option>
+                  <option value="No Sale">No Sale</option>
+                </select>
+                <select
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  className="popup-input"
+                  disabled={loading}
+                >
+                  <option value="Vitality Now">Vitality Now</option>
+                  <option value="Nooro">Nooro</option>
+                </select>
+                <select
+                  name="product"
+                  value={formData.product}
+                  onChange={handleInputChange}
+                  className="popup-input"
+                  disabled={loading}
+                >
+                  <option value="Youthful Brain">Youthful Brain</option>
+                  <option value="Nail Exodus">Nail Exodus</option>
+                </select>
+                <button 
+                  onClick={handleFormSubmit}
+                  disabled={loading}
+                  className="popup-button"
+                >
+                  {loading ? (
+                    <div className="button-content">
+                      <RefreshCw className="animate-spin" size={18} />
+                      <span className="ml-2">Processing...</span>
+                    </div>
                   ) : (
-                    <>
-                      <Upload className="upload-icon" />
-                      <p className="upload-text">Drag and drop your second audio file here, or</p>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 2)}
-                        id="file-upload-2"
-                        accept="audio/*"
-                        required
-                      />
-                      <label
-                        htmlFor="file-upload-2"
-                        className="upload-label"
-                      >
-                        Select second file
-                      </label>
-                    </>
+                    'Decode'
                   )}
-                </div>
-              </div>
-
-              {showPopup && (
-                <>
-                  <div className="popup-overlay" onClick={() => !loading && setShowPopup(false)} />
-                  <div className="popup">
-                    <h3>Enter Call Details</h3>
-                    <input
-                      type="text"
-                      name="repName"
-                      placeholder="Rep Name"
-                      value={formData.repName}
-                      onChange={handleInputChange}
-                      className="popup-input"
-                      disabled={loading}
-                    />
-                    <input
-                      type="text"
-                      name="customerName"
-                      placeholder="Customer Name"
-                      value={formData.customerName}
-                      onChange={handleInputChange}
-                      className="popup-input"
-                      disabled={loading}
-                    />
-                    <input
-                      type="number"
-                      name="saleAmount"
-                      placeholder="Sale Amount"
-                      value={formData.saleAmount}
-                      onChange={handleInputChange}
-                      step="0.01"
-                      min="0"
-                      className="popup-input"
-                      disabled={loading}
-                    />
-                    <select
-                      name="saleStatus"
-                      value={formData.saleStatus}
-                      onChange={handleInputChange}
-                      className="popup-input"
-                      disabled={loading}
-                    >
-                      <option value="Sale">Sold</option>
-                      <option value="No Sale">No Sale</option>
-                    </select>
-                    <select
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleInputChange}
-                      className="popup-input"
-                      disabled={loading}
-                    >
-                      <option value="Vitality Now">Vitality Now</option>
-                      <option value="Nooro">Nooro</option>
-                    </select>
-                    <select
-                      name="product"
-                      value={formData.product}
-                      onChange={handleInputChange}
-                      className="popup-input"
-                      disabled={loading}
-                    >
-                      <option value="Youthful Brain">Youthful Brain</option>
-                      <option value="Nail Exodus">Nail Exodus</option>
-                    </select>
-                    <button 
-                      onClick={handleFormSubmit}
-                      disabled={loading}
-                      className="popup-button"
-                    >
-                      {loading ? (
-                        <div className="button-content">
-                          <RefreshCw className="animate-spin" size={18} />
-                          <span className="ml-2">Processing...</span>
-                        </div>
-                      ) : (
-                        'Decode'
-                      )}
-                    </button>
-                    {/* Show progress status if any */}
-                    {pollingProgress && (
-                      <div className="progress-status">
-                        {pollingProgress}
-                      </div>
-                    )}
+                </button>
+                {/* Show progress status if any */}
+                {pollingProgress && (
+                  <div className="progress-status">
+                    {pollingProgress}
                   </div>
-                </>
-              )}
-
-              <CallList availableCalls={dummyCalls} />
-            </div>
-          )}
-          {activeMenu === 'Settings' && (
-            <div className="settings-content">
-              Settings Content
-            </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

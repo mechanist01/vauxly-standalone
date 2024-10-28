@@ -3,9 +3,9 @@ import React from 'react';
 const CustomerAppreciation = () => {
   return (
     <div className="analysis-item">
-      <h3>[in development]Customer Appreciation Score</h3>
-      <div className="customer-appreciation-container">
-        {/* Empty container for future implementation */}
+      <h3>Customer Appreciation Score</h3>
+      <div className="customer-appreciation-container" style={{ textAlign: 'center' }}>
+        <p>[in development]</p>
       </div>
     </div>
   );
