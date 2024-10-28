@@ -14,7 +14,7 @@ import dummyCalls from './totalcalls';
 import saveAndSend from './saveandsend';
 import { getAudioStream, updateAudioTimestamp } from './grabaudioplay';
 import { fetchDecodedCalls, fetchAudioFromBucket } from './supapopulate';
-
+import LoadDecodeMenu from './tools/LoadDecodeMenu'; // Add this import at the top
 
 const TWO_MINUTES = 120;
 
@@ -58,7 +58,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // Sidebar component
-const Sidebar = ({ activeMenu, setActiveMenu }) => {
+const Sidebar = ({ activeMenu, setActiveMenu, onLoadDecodeClick, isLoadDecodeOpen }) => {
   const menuItems = ['Dashboard', 'Decoded Calls'];
 
   return (
@@ -73,7 +73,12 @@ const Sidebar = ({ activeMenu, setActiveMenu }) => {
           {item}
         </button>
       ))}
-      
+      <button
+        onClick={onLoadDecodeClick}
+        className={`load-decode-button ${isLoadDecodeOpen ? 'active' : ''}`} // Updated line
+      >
+        Load & Decode
+      </button>
     </div>
   );
 };
@@ -377,27 +382,7 @@ const AnalysisGrid = ({ repCertaintyScore, callControlScore, customerMotivation,
         <h3 className={`strikethrough-container ${isSale ? 'active fade-text' : ''}`}>
           Customer Objection Reason
         </h3>
-        {isSale ? (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            marginTop: '1.5rem'
-          }}>
-            <img 
-              src="/money.gif" 
-              alt="Sale celebration" 
-              style={{
-                width: '40px',
-                height: '40px',
-                objectFit: 'contain'
-              }}
-            />
-          </div>
-        ) : (
-          <p>Price</p>
-        )}
+        <p></p> 
       </div>
       <div className="analysis-item">
         <h3>Rep Certainty</h3>
@@ -506,6 +491,7 @@ const App = () => {
   const [isPolling, setIsPolling] = useState(false);
   const [pollingProgress, setPollingProgress] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoadDecodeOpen, setIsLoadDecodeOpen] = useState(false);
   
   const chatBoxRef = useRef(null);
 
@@ -880,11 +866,25 @@ const App = () => {
   return (
     <div className="bigboom-container">
       <div className="meta-container">
-        <div className="sidebar-container">
-          <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+        <div className={`sidebar-container ${isLoadDecodeOpen ? 'menu-open' : ''}`}>
+          <Sidebar 
+            activeMenu={activeMenu} 
+            setActiveMenu={setActiveMenu}
+            onLoadDecodeClick={() => setIsLoadDecodeOpen(!isLoadDecodeOpen)}
+            isLoadDecodeOpen={isLoadDecodeOpen}
+          />
         </div>
-
-        <div className="main-content">
+        <LoadDecodeMenu 
+          isOpen={isLoadDecodeOpen}
+          onClose={() => setIsLoadDecodeOpen(false)}
+          onCallSelect={(call) => {
+            setSelectedCall(call);
+            handleCallChange({ target: { value: call.id } });
+          }}
+          selectedCall={selectedCall}
+          setActiveMenu={setActiveMenu}
+        />
+        <div className={`main-content ${isLoadDecodeOpen ? 'menu-open' : ''}`}>
           {activeMenu === 'Dashboard' && (
             <Dashboard
               selectedCall={selectedCall}
