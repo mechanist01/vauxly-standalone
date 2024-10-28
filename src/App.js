@@ -4,15 +4,17 @@ import { Play, SkipBack, SkipForward, Home, FileText, BarChart2, Settings, Menu,
 import { calculateFillerWordPercentage } from './tools/FillerWords';
 import { calculateRepWPM } from './tools/repwpm';
 import { calculateMatchPercentage } from './tools/ScriptAdherence';
-import { calculateSentimentHitCounts } from './tools/RepTone';
 import { calculateCallControl } from './tools/callcontrol';
 import { calculateCustomerMotivation } from './tools/customermotivation';
 import { calculateRepCertainty } from './tools/repcertainty';
+import CustomerAppreciation from './tools/CustomerAppreciation';
 import SkipButtons from './tools/callskip';
 import './App.css';
 import dummyCalls from './totalcalls';
 import saveAndSend from './saveandsend';
 import { getAudioStream, updateAudioTimestamp } from './grabaudioplay';
+import { fetchDecodedCalls, fetchAudioFromBucket } from './supapopulate';
+
 
 const TWO_MINUTES = 120;
 
@@ -83,7 +85,6 @@ const Dashboard = ({
   repCertaintyScore,
   callControlScore,
   customerMotivation,
-  sentimentHitCounts,
   fillerWordPercentage,
   repWPM,
   scriptMatchPercentage,
@@ -99,40 +100,42 @@ const Dashboard = ({
   refreshAvailableCalls,
   isRefreshing,
   audioRef,
-  setCurrentTime
+  setCurrentTime,
+  onDropdownOpen
 }) => {
-  // Filter only processed calls
   const processedCalls = availableCalls.filter(call => call.processed === 'Yes');
+  console.log('Available calls:', availableCalls);
+  console.log('Processed calls:', processedCalls);
+  console.log('Selected call:', selectedCall);
 
   return (
     <div className="dashboard">
       <div className="main-container">
         <div className="decoded-call-section">
-          <label htmlFor="call-select">Load Decoded Call:</label>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <RefreshCw
-              onClick={refreshAvailableCalls}
-              className={isRefreshing ? 'animate-spin' : ''}
-              style={{ cursor: 'pointer', marginRight: '0.5rem' }}
-            />
             <select
               id="call-select"
-              value={selectedCall ? selectedCall.customer : ''}
+              value={selectedCall ? selectedCall.id : ''}  // Changed from customer to id
               onChange={handleCallChange}
+              onClick={onDropdownOpen}
+              onFocus={onDropdownOpen}
             >
               <option value="">Select a call</option>
-              {processedCalls.map((call, index) => (
-                <option key={index} value={call.customer}>
-                  {`${call.customer} - ${call.rep} - $${call.saleAmount}`}
-                </option>
-              ))}
+              {processedCalls.map((call) => {
+                console.log('Rendering option for call:', call);
+                return (
+                  <option key={call.id} value={call.id}>  // Changed from index to call.id
+                    {`${call.customer} - ${call.rep} - $${call.saleAmount}`}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
           {selectedCall && (
             <div className="call-tags flex space-x-2 mt-2">
               <div className="tag bg-secondary text-white p-2 rounded cursor-pointer">
-                {selectedCall.saleStatus}
+                Sale: {selectedCall.sale}
               </div>
               <div className="tag bg-secondary text-white p-2 rounded cursor-pointer">
                 Upload Date: {selectedCall.uploadDate}
@@ -143,6 +146,9 @@ const Dashboard = ({
               <div className="tag bg-secondary text-white p-2 rounded cursor-pointer">
                 Product: {selectedCall.product}
               </div>
+              <div className="tag bg-secondary text-white p-2 rounded cursor-pointer">
+                Amount: ${selectedCall.saleAmount}
+              </div>
             </div>
           )}
         </div>
@@ -152,30 +158,17 @@ const Dashboard = ({
           repCertaintyScore={repCertaintyScore}
           callControlScore={callControlScore}
           customerMotivation={customerMotivation}
+          selectedCall={selectedCall}
         />
 
         {/* Rep Analysis Grid */}
         <div className="analysis-grid">
-          <div className="analysis-item">
-            <h3>Rep Tone</h3>
-            {Object.keys(sentimentHitCounts).length === 0 ? (
-              <p>No sentiments found</p>
-            ) : (
-              <ul>
-                {Object.entries(sentimentHitCounts)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 3)
-                  .map(([sentiment, count], index) => (
-                    <li key={index}>{sentiment}: {count} hits</li>
-                  ))}
-              </ul>
-            )}
-          </div>
+          <CustomerAppreciation />
           <div className="analysis-item">
             <h3>Filler Words</h3>
             <p>
               <span
-                style={{ fontSize: '32px', fontWeight: 'bold', color: getFillerWordColor(fillerWordPercentage) }}
+                style={{ fontSize: '28px', fontWeight: 'bold', color: getFillerWordColor(fillerWordPercentage) }}
               >
                 {fillerWordPercentage.toFixed(2)}%
               </span>
@@ -185,7 +178,7 @@ const Dashboard = ({
             <h3>Words/Minute</h3>
             <p>
               <span
-                style={{ fontSize: '32px', fontWeight: 'bold', color: getWPMColor(repWPM) }}
+                style={{ fontSize: '28px', fontWeight: 'bold', color: getWPMColor(repWPM) }}
               >
                 {repWPM.toFixed(2)}
               </span>
@@ -195,7 +188,7 @@ const Dashboard = ({
             <h3>Script Adherence</h3>
             <p>
               <span
-                style={{ fontSize: '32px', fontWeight: 'bold', color: getScriptAdherenceColor(scriptMatchPercentage) }}
+                style={{ fontSize: '28px', fontWeight: 'bold', color: getScriptAdherenceColor(scriptMatchPercentage) }}
               >
                 {scriptMatchPercentage.toFixed(2)}%
               </span>
@@ -218,21 +211,6 @@ const Dashboard = ({
             onError={(e) => {
               console.error('Audio error:', e);
             }}
-            onTimeUpdate={(e) => {
-              const time = e.target.currentTime;
-              setCurrentTime(time);
-              
-              // Update visible range if time is outside window
-              if (time < visibleTimeRange[0] || time > visibleTimeRange[1]) {
-                const start = Math.max(0, time - TWO_MINUTES / 2);
-                const end = start + TWO_MINUTES;
-                setVisibleTimeRange([start, end]);
-              }
-            }}
-            onEnded={() => {
-              setCurrentTime(0);
-              setVisibleTimeRange([0, TWO_MINUTES]);
-            }}
           />
         </div>
 
@@ -240,12 +218,12 @@ const Dashboard = ({
         <div className="customer-journey-conversation">
           <div className="customer-sentiment-journey">
             <h3>Customer Sentiment Journey</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="95%" height={290}>
               <LineChart
                 data={customerJourneyData.filter(
                   item => item.time >= visibleTimeRange[0] && item.time <= visibleTimeRange[1]
                 )}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#4a5568" />
                 <XAxis
@@ -259,7 +237,7 @@ const Dashboard = ({
                 <YAxis
                   domain={[-100, 100]}
                   stroke="#f7fafc"
-                  tick={{ fill: '#f7fafc' }}
+                  tick={false} // Remove Y-axis labels
                   tickFormatter={(value) => `${value.toFixed(0)}%`}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -275,29 +253,42 @@ const Dashboard = ({
             </ResponsiveContainer>
             <input
               type="range"
+              className="custom-range-slider"
               min="0"
               max={Math.max(0, Math.floor(customerJourneyData[customerJourneyData.length - 1]?.time || 0) - TWO_MINUTES)}
               value={visibleTimeRange[0]}
-              onChange={handleScroll}
-              style={{ width: '100%', marginTop: '0.5rem' }}
+              onChange={(e) => {
+                const newStart = Number(e.target.value);
+                setVisibleTimeRange([newStart, newStart + TWO_MINUTES]);
+                if (audioRef.current) {
+                  audioRef.current.currentTime = newStart + TWO_MINUTES / 2;
+                }
+              }}
+              style={{ width: '95%', marginTop: '0.5rem' }}
             />
           </div>
 
           <div className="conversation-container">
             <div className="message-box">
-              <div className="conversation-messages" ref={chatBoxRef}>
+              <div 
+                className="conversation-messages" 
+                ref={chatBoxRef}
+              >
                 {loading ? (
                   <div className="text-center text-white">Loading conversation...</div>
                 ) : chatData.length === 0 ? (
-                  <div className="text-center text-white">
-                    No conversation data available
-                  </div>
+                  <div className="text-center text-white">No conversation data available</div>
                 ) : (
                   chatData.map((message, index) => (
                     <div
                       key={index}
                       id={`message-${index}`}
-                      className={`message-wrapper ${message.speaker === 'Rep' ? 'message-left' : 'message-right'}`}
+                      className={`message-wrapper ${message.speaker === 'Rep' ? 'message-left' : 'message-right'} ${
+                        message.timestamp >= visibleTimeRange[0] && 
+                        message.timestamp <= visibleTimeRange[1] ? 
+                        'message-visible' : ''
+                      }`}
+                      data-timestamp={message.timestamp}
                     >
                       <div className={`message ${message.speaker === 'Rep' ? 'message-rep' : 'message-customer'}`}>
                         <p className="message-text">{message.message}</p>
@@ -310,7 +301,11 @@ const Dashboard = ({
                         </div>
                         <span
                           className="message-time"
-                          onClick={() => handleTimestampClick(message.timestamp)}
+                          onClick={() => {
+                            if (audioRef.current) {
+                              audioRef.current.currentTime = message.timestamp;
+                            }
+                          }}
                         >
                           {formatTime(message.timestamp)}
                         </span>
@@ -354,52 +349,95 @@ const getScriptAdherenceColor = (percentage) => {
 
 // Define color functions for the analysis grid
 const getRepCertaintyColor = (score) => {
-  if (score >= 80) return '#39e642'; // Green for high certainty
-  else if (score >= 50) return '#f6e05e'; // Yellow for moderate certainty
-  else return '#e53e3e'; // Red for low certainty
+  if (score >= 80) return '#39e642';
+  else if (score >= 50) return '#f6e05e';
+  else return '#e53e3e';
 };
 
 const getCallControlColor = (score) => {
-  if (score >= 70) return '#39e642'; // Green for good control
-  else if (score >= 40) return '#f6e05e'; // Yellow for moderate control
-  else return '#e53e3e'; // Red for poor control
+  if (score >= 70) return '#39e642';
+  else if (score >= 40) return '#f6e05e';
+  else return '#e53e3e';
 };
 
 const getCustomerMotivationColor = (score) => {
-  if (score >= 70) return '#39e642'; // Green for high motivation
-  else if (score >= 40) return '#f6e05e'; // Yellow for moderate motivation
-  else return '#e53e3e'; // Red for low motivation
+  if (score >= 70) return '#39e642';
+  else if (score >= 40) return '#f6e05e';
+  else return '#e53e3e';
 };
 
 // Analysis Grid Component
-const AnalysisGrid = ({ repCertaintyScore, callControlScore, customerMotivation }) => (
-  <div className="analysis-grid">
-    <div className="analysis-item">
-      <div className="customer-objection-reason">
-        <div className="customer-objection-reason-text">Customer Objection Reason</div>
-        <p className="customer-objection-reason-text">Price</p>
+const AnalysisGrid = ({ repCertaintyScore, callControlScore, customerMotivation, selectedCall }) => {
+  const isSale = selectedCall?.sale?.toLowerCase() === 'sale' || 
+                selectedCall?.sale?.toLowerCase() === 'sold';
+
+  return (
+    <div className="analysis-grid">
+      <div className="analysis-item">
+        <h3 className={`strikethrough-container ${isSale ? 'active fade-text' : ''}`}>
+          Customer Objection Reason
+        </h3>
+        {isSale ? (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            marginTop: '1.5rem'
+          }}>
+            <img 
+              src="/money.gif" 
+              alt="Sale celebration" 
+              style={{
+                width: '40px',
+                height: '40px',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
+        ) : (
+          <p>Price</p>
+        )}
+      </div>
+      <div className="analysis-item">
+        <h3>Rep Certainty</h3>
+        <p>
+          <span style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold',
+            color: getRepCertaintyColor(repCertaintyScore)
+          }}>
+            {repCertaintyScore}%
+          </span>
+        </p>
+      </div>
+      <div className="analysis-item">
+        <h3>Call Control</h3>
+        <p>
+          <span style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold',
+            color: getCallControlColor(callControlScore)
+          }}>
+            {callControlScore}%
+          </span>
+        </p>
+      </div>
+      <div className="analysis-item">
+        <h3>Customer Motivation</h3>
+        <p>
+          <span style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold',
+            color: getCustomerMotivationColor(customerMotivation.motivationScore)
+          }}>
+            {customerMotivation.motivationScore}%
+          </span>
+        </p>
       </div>
     </div>
-    <div className="analysis-item">
-      <div className="rep-certainty">
-        <div className="rep-certainty-text">Rep Certainty</div>
-        <h4 className="rep-certainty-score">{repCertaintyScore}%</h4>
-      </div>
-    </div>
-    <div className="analysis-item">
-      <div className="call-control">
-        <div className="call-control-text">Call Control</div>
-        <h4 className="call-control-score">{callControlScore}%</h4>
-      </div>
-    </div>
-    <div className="analysis-item">
-      <div className="customer-motivation">
-        <div className="customer-motivation-text">Customer Motivation</div>
-        <h4 className="customer-motivation-score">{customerMotivation.motivationScore}%</h4>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const CallList = ({ availableCalls }) => {
   return (
@@ -430,6 +468,8 @@ const CallList = ({ availableCalls }) => {
   );
 };
 
+
+
 const App = () => {
   // State declarations
   const [selectedCall, setSelectedCall] = useState('Call 1');
@@ -443,7 +483,6 @@ const App = () => {
   const [fillerWordPercentage, setFillerWordPercentage] = useState(0);
   const [repWPM, setRepWPM] = useState(0);
   const [scriptMatchPercentage, setScriptMatchPercentage] = useState(0);
-  const [sentimentHitCounts, setSentimentHitCounts] = useState({});
   const [callControlScore, setCallControlScore] = useState(0);
   const [customerMotivation, setCustomerMotivation] = useState({ motivationScore: 0 });
   const [repCertaintyScore, setRepCertaintyScore] = useState(0);
@@ -466,14 +505,9 @@ const App = () => {
   const [availableCalls, setAvailableCalls] = useState([]);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingProgress, setPollingProgress] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const chatBoxRef = useRef(null);
-
-  const callTags = {
-    'Call 1': { saleStatus: 'No Sale', uploadDate: '2023-10-01', reviewed: 'Yes' },
-    'Call 2': { saleStatus: 'No Sale', uploadDate: '2023-10-02', reviewed: 'No' },
-    'Call 3': { saleStatus: 'No Sale', uploadDate: '2023-10-03', reviewed: 'Yes' }
-  };
 
   const buttonConfigs = [
     { buttonText: 'Intro', searchText: 'vitality now with' },
@@ -496,14 +530,13 @@ const App = () => {
 
   // Modified handleCallChange to process metrics when a call is selected
   const handleCallChange = async (event) => {
-    const selectedCustomer = event.target.value;
+    const selectedId = event.target.value;
+    console.log('handleCallChange called with value:', selectedId);
     setLoading(true);
 
-    console.log('Selected customer:', selectedCustomer);
-
     try {
-      if (!selectedCustomer) {
-        console.log('No customer selected, resetting metrics.');
+      if (!selectedId) {
+        console.log('No call selected, resetting state');
         setSelectedCall(null);
         resetMetrics();
         if (audioRef.current) {
@@ -513,18 +546,18 @@ const App = () => {
         return;
       }
 
-      const callData = dummyCalls.find(call => call.customer === selectedCustomer);
-      console.log('Call data found:', callData);
+      const callData = availableCalls.find(call => call.id === selectedId);
+      console.log('Found call data:', callData);
 
       if (callData && callData.conversation) {
         setSelectedCall(callData);
-        
-        // Load audio URL immediately when call is selected
+
+        // Fetch audio URL from Supabase bucket
         if (audioRef.current && callData.audioFiles?.merged) {
           try {
-            const audioUrl = await getAudioStream(callData);
+            const audioUrl = await fetchAudioFromBucket(callData.audioFiles.merged);
+            console.log('Fetched audio URL:', audioUrl);
             if (audioUrl) {
-              console.log('Setting audio URL:', audioUrl);
               audioRef.current.src = audioUrl;
             } else {
               console.error('Failed to get audio URL');
@@ -536,64 +569,62 @@ const App = () => {
 
         // Process conversation data for metrics
         const conversation = callData.conversation;
-        console.log('Conversation data:', conversation);
-
-        // Verify conversation data structure
-        if (!Array.isArray(conversation)) {
-          console.error('Invalid conversation data structure');
-          resetMetrics();
-          return;
-        }
+        console.log('Processing conversation data:', conversation);
+        
+        // Calculate metrics
+        const fillerPercentage = calculateFillerWordPercentage(conversation);
+        setFillerWordPercentage(fillerPercentage || 0);
+        
+        const wpm = calculateRepWPM(conversation);
+        setRepWPM(wpm);
+        
+        const matchPercentage = calculateMatchPercentage(conversation);
+        setScriptMatchPercentage(matchPercentage);
+        
+        const controlScore = calculateCallControl(conversation);
+        setCallControlScore(controlScore);
+        
+        const motivation = calculateCustomerMotivation(conversation);
+        setCustomerMotivation(motivation);
+        
+        const certaintyScore = calculateRepCertainty(conversation);
+        setRepCertaintyScore(certaintyScore);
 
         // Update chat data and customer journey
         setChatData(conversation);
         const journeyData = formatCustomerJourneyData(conversation);
         setCustomerJourneyData(journeyData);
-        console.log('Customer journey data:', journeyData); // Log the journey data
-
-        // Calculate max score for sentiment scaling
-        const max = getMaxScore(conversation);
-        setMaxScore(max);
-        console.log('Max score calculated:', max); // Log the max score
-
-        // Calculate filler word percentage
-        const fillerPercentage = calculateFillerWordPercentage(conversation);
-        setFillerWordPercentage(fillerPercentage || 0); // Ensure we have a number
-        console.log('Filler word percentage:', fillerPercentage); // Log the filler word percentage
-
-        // Calculate other metrics
-        const wpm = calculateRepWPM(conversation);
-        setRepWPM(wpm);
-        console.log('Words per minute:', wpm); // Log the WPM
-
-        const matchPercentage = calculateMatchPercentage(conversation);
-        setScriptMatchPercentage(matchPercentage);
-        console.log('Script match percentage:', matchPercentage); // Log the script match percentage
-
-        const sentiments = calculateSentimentHitCounts(conversation);
-        setSentimentHitCounts(sentiments);
-        console.log('Sentiment hit counts:', sentiments); // Log the sentiment hit counts
-
-        const controlScore = calculateCallControl(conversation);
-        setCallControlScore(controlScore);
-        console.log('Call control score:', controlScore); // Log the call control score
-
-        const motivation = calculateCustomerMotivation(conversation);
-        setCustomerMotivation(motivation);
-        console.log('Customer motivation:', motivation); // Log the customer motivation
-
-        const certaintyScore = calculateRepCertainty(conversation);
-        setRepCertaintyScore(certaintyScore);
-        console.log('Rep certainty score:', certaintyScore); // Log the rep certainty score
-
-        // Reset visible time range when loading new call
+        
+        // Reset visible time range
         setVisibleTimeRange([0, TWO_MINUTES]);
       }
     } catch (error) {
-      console.error('Error processing call data:', error);
+      console.error('Error in handleCallChange:', error);
       resetMetrics();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDropdownOpen = async () => {
+    console.log('Dropdown opened, current state:', { isDropdownOpen, availableCalls });
+    if (!isDropdownOpen) {
+      setIsDropdownOpen(true);
+      try {
+        setLoading(true);
+        const calls = await fetchDecodedCalls();
+        console.log('Fetched calls:', calls);
+        if (Array.isArray(calls) && calls.length > 0) {
+          setAvailableCalls(calls);
+          console.log('Updated available calls:', calls);
+        } else {
+          console.log('No calls fetched or empty array received');
+        }
+      } catch (error) {
+        console.error('Error in handleDropdownOpen:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -605,21 +636,18 @@ const App = () => {
     setFillerWordPercentage(0);
     setRepWPM(0);
     setScriptMatchPercentage(0);
-    setSentimentHitCounts({});
     setCallControlScore(0);
     setCustomerMotivation({ motivationScore: 0 });
     setRepCertaintyScore(0);
   };
 
   // Modified refreshAvailableCalls to handle metrics update
-  const refreshAvailableCalls = () => {
+  const refreshAvailableCalls = async () => {
     setIsRefreshing(true);
     try {
-      // Get fresh data from dummyCalls
-      const freshCallData = [...dummyCalls];
+      const freshCallData = await fetchDecodedCalls();
       setAvailableCalls(freshCallData);
       
-      // If there was a selected call, refresh its data too
       if (selectedCall) {
         const updatedCallData = freshCallData.find(
           call => call.customer === selectedCall.customer
@@ -804,6 +832,51 @@ const App = () => {
     };
   }, []);
 
+  // Add new useEffect to handle media player time updates
+  useEffect(() => {
+    if (audioRef.current) {
+      const handleTimeUpdate = () => {
+        const currentTime = audioRef.current.currentTime;
+        
+        // Update current time state
+        setCurrentTime(currentTime);
+        
+        // Auto-scroll the message box to the current message
+        const currentMessage = chatData.find(msg => 
+          msg.timestamp <= currentTime && 
+          (!chatData[chatData.indexOf(msg) + 1] || chatData[chatData.indexOf(msg) + 1].timestamp > currentTime)
+        );
+        
+        if (currentMessage && chatBoxRef.current) {
+          const messageElement = document.querySelector(`#message-${chatData.indexOf(currentMessage)}`);
+          if (messageElement) {
+            chatBoxRef.current.scrollTo({
+              top: messageElement.offsetTop - chatBoxRef.current.offsetHeight / 2,
+              behavior: 'smooth'
+            });
+          }
+        }
+
+        // Update visible time range for the graph
+        const newStart = Math.max(0, currentTime - TWO_MINUTES / 2);
+        const newEnd = newStart + TWO_MINUTES;
+        setVisibleTimeRange([newStart, newEnd]);
+      };
+
+      audioRef.current.addEventListener('timeupdate', handleTimeUpdate);
+      
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+        }
+      };
+    }
+  }, [audioRef.current, chatData]);
+
+  useEffect(() => {
+    console.log('Available calls updated:', availableCalls);
+  }, [availableCalls]);
+
   return (
     <div className="bigboom-container">
       <div className="meta-container">
@@ -820,7 +893,6 @@ const App = () => {
               repCertaintyScore={repCertaintyScore}
               callControlScore={callControlScore}
               customerMotivation={customerMotivation}
-              sentimentHitCounts={sentimentHitCounts}
               fillerWordPercentage={fillerWordPercentage}
               repWPM={repWPM}
               scriptMatchPercentage={scriptMatchPercentage}
@@ -837,6 +909,7 @@ const App = () => {
               isRefreshing={isRefreshing}
               audioRef={audioRef}
               setCurrentTime={setCurrentTime}
+              onDropdownOpen={handleDropdownOpen}
             />
           )}
           {activeMenu === 'Decoded Calls' && (
@@ -902,10 +975,10 @@ const App = () => {
               </div>
 
               {showPopup && (
-                <div className="popup">
-                  <h3>Enter Call Details</h3>
-                  {console.log('Popup displayed')}
-                  <>
+                <>
+                  <div className="popup-overlay" onClick={() => !loading && setShowPopup(false)} />
+                  <div className="popup">
+                    <h3>Enter Call Details</h3>
                     <input
                       type="text"
                       name="repName"
@@ -913,7 +986,7 @@ const App = () => {
                       value={formData.repName}
                       onChange={handleInputChange}
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     />
                     <input
                       type="text"
@@ -922,7 +995,7 @@ const App = () => {
                       value={formData.customerName}
                       onChange={handleInputChange}
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     />
                     <input
                       type="number"
@@ -933,16 +1006,16 @@ const App = () => {
                       step="0.01"
                       min="0"
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     />
                     <select
                       name="saleStatus"
                       value={formData.saleStatus}
                       onChange={handleInputChange}
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     >
-                      <option value="Sale">Sale</option>
+                      <option value="Sale">Sold</option>
                       <option value="No Sale">No Sale</option>
                     </select>
                     <select
@@ -950,7 +1023,7 @@ const App = () => {
                       value={formData.brand}
                       onChange={handleInputChange}
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     >
                       <option value="Vitality Now">Vitality Now</option>
                       <option value="Nooro">Nooro</option>
@@ -960,19 +1033,33 @@ const App = () => {
                       value={formData.product}
                       onChange={handleInputChange}
                       className="popup-input"
-                      disabled={loading} // Disable input during loading
+                      disabled={loading}
                     >
                       <option value="Youthful Brain">Youthful Brain</option>
                       <option value="Nail Exodus">Nail Exodus</option>
                     </select>
                     <button 
                       onClick={handleFormSubmit}
-                      disabled={loading} // Disable button during loading
+                      disabled={loading}
+                      className="popup-button"
                     >
-                      {loading ? 'Processing...' : 'Decode'}
+                      {loading ? (
+                        <div className="button-content">
+                          <RefreshCw className="animate-spin" size={18} />
+                          <span className="ml-2">Processing...</span>
+                        </div>
+                      ) : (
+                        'Decode'
+                      )}
                     </button>
-                  </>
-                </div>
+                    {/* Show progress status if any */}
+                    {pollingProgress && (
+                      <div className="progress-status">
+                        {pollingProgress}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               <CallList availableCalls={dummyCalls} />

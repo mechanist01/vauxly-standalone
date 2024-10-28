@@ -2,7 +2,10 @@ import React from 'react';
 
 // Function to handle skipping to a specific part of the conversation
 const skipToMessage = (searchText, chatData, setVisibleTimeRange, chatBoxRef) => {
-  const foundMessageIndex = chatData.findIndex(message => message.message.includes(searchText));
+  const lowerCaseSearchText = searchText.toLowerCase();
+  const foundMessageIndex = chatData.findIndex(message => 
+    message.message.toLowerCase().includes(lowerCaseSearchText)
+  );
 
   if (foundMessageIndex !== -1) {
     const foundMessage = chatData[foundMessageIndex];

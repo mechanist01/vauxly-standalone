@@ -1,26 +1,31 @@
+/* Sidebar styles */
 .sidebar {
   background-color: #2d3748;
   color: #f7fafc;
-  padding-left: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar h2 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: bold;
+  margin-bottom: 2rem;
+  color: #f7fafc;
   text-align: left;
 }
 
 .sidebar button {
   width: 100%;
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   margin-bottom: 0.5rem;
   background-color: transparent;
   color: #f7fafc;
   border: none;
-  font-size: 1rem;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .sidebar button.active {
@@ -28,37 +33,101 @@
   color: #ffffff;
 }
 
-/* Dashboard styles */
-.dashboard {
-  background-color: #1a202c; /* Dark background color */
+/* Layout containers */
+.bigboom-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a202c;
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.meta-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background-color: #1a202c;
+  overflow: hidden;
+}
+
+.sidebar-container {
+  width: 13rem;
+  height: 100vh;
+  background-color: #2d3748;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  padding: 1rem;
   color: #f7fafc;
+  border-right: 1px solid #4a5568;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.main-content {
+  margin-left: 15rem;
+  flex: 1;
+  background-color: #1a202c;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
-  height: 100vh; /* Full height of the main-content */
+  max-height: 100vh;
+  justify-content: center;
+
 }
 
-.dashboard .main-container {
-  background-color: #1a202c; /* Dark background color */
-  display: grid;
-  grid-template-rows: auto auto 1fr; /* Adjust as needed for your layout */
-  gap: 1rem;
+/* Dashboard layout */
+.dashboard {
+  background-color: #1a202c;
+  color: #f7fafc;
+  padding: 2rem;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease, margin 0.3s ease;
+  justify-content: center;
 }
 
-.dashboard .decoded-call-section {
+.main-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(100vw - 16rem - 4rem);
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* Decoded call section */
+.decoded-call-section {
   background-color: #2d3748;
   padding: 1rem;
   border-radius: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1px solid #4a5568;
+  margin-bottom: 1rem;
+  width: 100vww;
+  height: auto;
+  max-height: fit-content;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 }
 
-.dashboard .decoded-call-section label {
+.decoded-call-section label {
   color: #f7fafc;
   margin-right: 0.5rem;
 }
 
-.dashboard .decoded-call-section select {
+.decoded-call-section select {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
   font-size: 0.875rem;
   border: 1px solid #4a5568;
   border-radius: 0.25rem;
@@ -66,105 +135,181 @@
   color: #f7fafc;
 }
 
-.dashboard .decoded-call-section .tags {
-  display: flex;
+.select-container {
+  width: 100%;
   margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
-.dashboard .decoded-call-section .tag {
-  background-color: #4a5568; /* Tag background color */
-  color: #f7fafc; /* Tag text color */
-  padding: 0.25rem 0.5rem; /* Smaller padding for a compact look */
-  border-radius: 0.25rem; /* Updated border-radius */
-  font-size: 0.75rem; /* Smaller font size */
-  font-weight: 500; /* Medium font weight */
-  cursor: pointer; /* Pointer cursor for interactivity */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
-  display: inline-flex; /* Align items in a row */
-  align-items: center; /* Center items vertically */
-  margin-right: 0.5rem;
-  margin-top: 0.5rem; /* Space between tags */
-}
-
-.dashboard .decoded-call-section .tag:hover {
-  background-color: #2b6cb0; /* Darker shade on hover */
-}
-
-/* Add more styles as needed for other components */
-
-.meta-container {
-  background-color: #1a202c; /* Dark background color */
-  display: flex; /* Use flexbox to align items */
-  height: 100%; /* Full viewport height */
+/* Tags styling */
+.call-tags {
   width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
+.tag {
+  background-color: #4a5568;
+  color: #f7fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: bold;
+}
+
+.tag:hover {
+  background-color: #2b6cb0;
+}
+
+/* Analysis sections */
 .analysis-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Four equal columns */
-  gap: 1rem; /* Space between columns */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .analysis-item {
+  position: relative;
   background-color: #2d3748;
-  padding: 1rem;
+  padding: 1.5rem 1rem 1rem 1rem;
   border-radius: 0.25rem;
+  border: 1px solid #4a5568;
   color: #f7fafc;
+  height: auto;
+  min-height: 80px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
+.analysis-item h3 {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  background-color: rgb(74, 85, 104);
+  color: #f7fafc;
+  font-size: .8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 0.8rem;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.analysis-item p {
+  margin-top: 2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.analysis-item .celebration-gif {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  margin-top: 1.5rem;
+}
+
+.analysis-item .celebration-gif img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Customer journey and conversation */
 .customer-journey-conversation {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Two equal columns */
-  gap: 1rem; /* Space between columns */
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1rem;
   height: 100%;
 }
 
-.customer-sentiment-journey,
 .conversation {
   background-color: #2d3748;
   padding: 1rem;
   border-radius: 0.25rem;
+  border: 1px solid #4a5568;
   color: #f7fafc;
-  /* Remove overflow-y: auto; */
 }
 
+.customer-sentiment-journey {
+  background-color: #2d3748;
+  border-radius: 0.25rem;
+  border: 1px solid #4a5568;
+  color: #f7fafc;
+}
+
+.customer-sentiment-journey h3 {
+  font-size: 1.2rem; /* Larger font size */
+  font-weight: bold;
+  width: 100%;
+  color: #f7fafc; /* Assuming similar color to .analysis-item h3 */
+  background-color: #4a5568; /* Assuming similar background to .analysis-item h3 */
+  padding: 0.5rem 0.5rem .5rem 0.5rem; /* Adjust padding as needed */
+  margin: 0rem 0rem 1.5rem 0rem; /* Remove default margin */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+  box-sizing: border-box; /* Include padding in the element's total width and height */
+} 
+
+/* Audio components */
 .audio-timeline {
   background-color: #2d3748;
+  max-height: 50px;
   padding: 1rem;
   border-radius: 0.25rem;
+  border: 1px solid #4a5568;
   color: #f7fafc;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .audio-player {
-  width: 100%;
-  background-color: #2d3748; /* Dark blue background */
-  color: #f7fafc; /* Light gray text */
-  border-radius: 0.25rem; /* Updated border-radius */
+  width: stretch;
+  background-color: #2d3748;
+  color: #f7fafc;
+  border-radius: 0.25rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  padding: 0.5rem;
+  vertical-align: middle;
 }
 
 .audio-player::-webkit-media-controls-panel {
-  background-color: #2d3748; /* Match the background color */
-  color: #f7fafc; /* Match the text color */
+  background-color: #2d3748;
+  color: #f7fafc;
 }
 
 .audio-player::-webkit-media-controls-play-button,
 .audio-player::-webkit-media-controls-volume-slider {
-  background-color: #ffffff; /* Slightly lighter blue */
+  background-color: #ffffff;
   border-radius: 0.25rem;
 }
 
 .audio-player::-webkit-media-controls-current-time-display,
 .audio-player::-webkit-media-controls-time-remaining-display {
-  color: #ffffff; /* Light gray text */
+  color: #ffffff;
 }
 
+/* Conversation styling */
 .conversation-container {
   background-color: #2d3748;
   border-radius: 0.25rem;
+  border: 1px solid #4a5568;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -182,13 +327,15 @@
 .message-box {
   background-color: #ffffff;
   border-radius: 0.25rem;
+  border: 1px solid #4a5568;
   padding: 0.5rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  flex-grow: 1; /* Allow the message-box to fill its container */
-  overflow-y: auto; /* Enable vertical scrolling */
-  max-height: 340px; /* Set maximum height */
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: 340px;
 }
 
+/* Message components */
 .message-wrapper {
   display: flex;
   margin-bottom: 0.5rem;
@@ -268,9 +415,10 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Skip buttons */
 .skip-buttons-container {
   display: flex;
-  justify-content: space-between; /* Ensures equal spacing between the buttons */
+  justify-content: space-between;
   padding: 5px 0;
 }
 
@@ -278,253 +426,105 @@
   background-color: #2d3748;
   color: white;
   border: none;
-  border-radius: 0.25rem; /* Updated border-radius */
+  border-radius: 0.25rem;
   padding: 5px 15px;
   font-size: 12px;
   cursor: pointer;
   margin: 0px 10px;
   transition: background-color 0.3s ease;
-  flex-grow: 1; /* This makes the buttons take up the available space */
+  flex-grow: 1;
 }
 
 .skip-button:hover {
-  background-color: #1b5081; /* Darker shade for hover effect */
+  background-color: #1b5081;
 }
 
-.sidebar-container {
-  width: 16rem; /* Fixed width for sidebar */
-  height: 100vh; /* Full height of the meta-container */
-  background-color: #2d3748;
-  color: #f7fafc;
-  padding: 1rem;
-}
-
-.main-content {
-  flex-grow: 1; /* Take up remaining space */
-  display: flex;
-  flex-direction: column;
-  height: 100vh; /* Full height of the meta-container */
-  background-color: #1a202c; /* Dark background color */
-  overflow-x: hidden; /* Prevent horizontal overflow */
-}
-
+/* Call list */
 .calllist-container {
-  width: 100%; /* Ensure it matches the width of the upload section */
-  overflow-x: hidden; /* Prevent horizontal overflow */
-}
-
-.calllist {
-  margin-top: 1rem;
-  width: 100%; /* Match the width of the container */
-  overflow-x: hidden; /* Prevent horizontal overflow */
-}
-
-.calllist-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Three columns for call details */
-  row-gap: 0.8rem; /* Increase space between rows */
-  column-gap: 0; /* Remove space between columns */
-  max-width: 90%; /* Ensure it does not exceed the container width */
-}
-
-.calllist-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem; /* Space between rows */
-  background-color: #2d3748; /* Background color for each row */
-  border-radius: 0.25rem; /* Rounded corners for each row */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
-  font-size: 1rem;
-}
-
-.calllist-row:hover {
-  background-color: #4a5568; /* Darker shade on hover */
-}
-
-.calllist-item {
-  padding: 5px; /* Reduced padding for less spacing */
-  flex: 1; /* Ensure items take equal space */
-  text-align: center; /* Center text within each item */
-  text-align: left;
-  padding: 0.5rem;
-}
-
-.calllist-item:first-child {
-  border-left: 1px solid #1a202c; /* Left border for the first item */
-}
-
-.calllist-item:last-child {
-  border-right: 1px solid #1a202c; /* Right border for the last item */
-}
-
-.bigboom-container {
-  height: 100%; /* Full viewport height */
-  background-color: #1a202c; /* Dark background color */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.meta-container {
-  display: flex; /* Use flexbox to align items */
-  height: 100%; /* Full height of the bigboom-container */
   width: 100%;
-  background-color: #1a202c; /* Dark background color */  /* Full width of the bigboom-container */
-}
-
-.sidebar-container {
-  width: 16rem; /* Fixed width for sidebar */
-  height: 100vh; /* Full height of the meta-container */
-  background-color: #2d3748;
-  color: #f7fafc;
-  padding: 1rem;
-}
-
-.main-content {
-  flex-grow: 1; /* Take up remaining space */
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Full height of the meta-container */
-  background-color: #1a202c; /* Dark background color */
-}
-
-.dashboard {
-  background-color: #1a202c; /* Dark background color */
-  color: #f7fafc;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  height: 100%; /* Full height of the main-content */
-}
-
-.calllist-container {
-  flex-grow: 1; /* Take up remaining space */
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
+  padding: 2rem; /* Updated padding */
+  max-width: calc(100vw - 16rem - 4rem); /* Updated max-width */
+  margin: 0 auto; /* Center the container */
   background-color: #1a202c;
   border-radius: 0.25rem;
-  height: 100%; /* Full height of the main-content */
-  overflow-x: hidden; /* Prevent horizontal overflow */
+  height: 100%;
+  overflow-x: hidden;
 }
 
 .calllist {
-  background-color: #1a202c; /* Dark background for the table */
-  border-radius: 0.5rem; /* Rounded corners */
-  overflow: hidden; /* Ensures the border-radius is applied */
-  max-width: 95%; /* Subtle shadow for depth */
+  background-color: #1a202c;
+  border-radius: 0.25rem; /* Updated border-radius */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Updated box-shadow */
+  overflow: hidden;
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 95%;
 }
 
-.calllist-header, .calllist-row {
+.calllist-header,
+.calllist-row {
   display: flex;
   justify-content: space-between;
-  padding: 1rem; /* Increased padding for a more spacious look */
-  border-bottom: 1px solid #2d3748; /* Subtle border between rows */
+  padding: 1rem;
+  border-bottom: 1px solid #2d3748;
   color: #f7fafc;
-  max-width: 95%; /* Light text color */
+  max-width: 95%;
 }
 
 .calllist-header {
-  background-color: #2d3748; /* Slightly darker background for the header */
+  background-color: #2d3748;
   font-weight: bold;
-  font-size: 1rem; /* Consistent font size */
+  font-size: 1rem;
+  grid-template-columns: repeat(8, 1fr); /* Updated grid template */
+  gap: 1rem; /* Updated gap */
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1px solid #4a5568;
 }
 
 .calllist-row {
-  background-color: #1a202c; /* Consistent background color */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  background-color: #1a202c;
+  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  grid-template-columns: repeat(8, 1fr); /* Updated grid template */
+  gap: 1rem; /* Updated gap */
 }
 
 .calllist-row:hover {
-  background-color: #2d3748; /* Darker shade on hover */
+  background-color: #2d3748;
 }
 
 .calllist-item {
   flex: 1;
   text-align: left;
-  padding: 0 0.5rem; /* Horizontal padding for spacing */
-  font-size: 0.875rem; /* Slightly smaller font size for a modern look */
-  white-space: nowrap; /* Prevent text wrapping */
-  overflow: hidden; /* Hide overflow text */
-  text-overflow: ellipsis; /* Add ellipsis for overflow text */
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Upload section */
 .upload-container {
-  border: 2px dashed #718096; /* Light gray border */
-  background-color: #2d3748; /* Dark blue background */
-  color: #f7fafc; /* Light gray text */
-  padding: 3rem;
+  border: 2px dashed #718096;
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding: 2rem; /* Updated padding */
   text-align: center;
   width: 67%;
-}
-
-.upload-icon {
-  margin: auto;
-  height: 3rem;
-  width: 3rem;
-  color: #a0aec0; /* text-gray-400 */
-}
-
-.upload-text,
-.selected-file {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: #e2e8f0; /* Very light gray text */
-}
-
-.upload-label {
-  margin-top: 0.5rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border: none;
-  font-size: 0.875rem;
-  font-weight: medium;
   border-radius: 0.25rem; /* Updated border-radius */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  color: white;
-  background-color: #3182ce; /* bg-blue-600 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Updated box-shadow */
 }
 
-.upload-label:hover {
-  background-color: #2b6cb0; /* hover:bg-blue-700 */
-}
-
-.upload-label:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); /* focus:ring-blue-500 */
-}
-
-.hidden {
-  display: none;
-}
-
-.upload-label {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background-color: #4299e1;
-  color: #f7fafc;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.upload-label:hover {
-  background-color: #2b6cb0;
-}
-
-.upload-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Two equal columns */
-  gap: 1rem; /* Space between columns */
+.upload-container:hover {
+  border-color: #4299e1; /* Updated hover border color */
 }
 
 .upload-container.upload-success {
-  background-color: #38a169; /* Green background for success */
-  color: #f7fafc; /* Light text color */
+  border: 2px solid #38a169; /* Updated border for success state */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -534,28 +534,67 @@
 .upload-success-text {
   font-size: 1rem;
   font-weight: bold;
+  color: #38a169; /* Updated text color */
 }
 
-.decode-button {
-  background-color: #3182ce; /* Blue background */
-  color: #f7fafc; /* Light text color */
+.upload-icon {
+  margin: auto;
+  height: 3rem;
+  width: 3rem;
+  color: #a0aec0;
+  margin-bottom: 1rem; /* Updated margin */
+}
+
+.upload-text,
+.selected-file {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #e2e8f0;
+  margin: 1rem 0; /* Updated margin */
+}
+
+.upload-label {
+  margin-top: 1rem; /* Updated margin */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 0.25rem; /* Rounded corners */
-  padding: 0.5rem 1rem; /* Padding for size */
-  font-size: 1rem; /* Font size */
-  cursor: pointer; /* Pointer cursor on hover */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
-  display: inline-block; /* Inline block for button-like appearance */
-  margin-top: 1rem; /* Space above the button */
+  font-size: 0.875rem;
+  font-weight: medium;
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: white;
+  background-color: #4299e1;
+  transition: background-color 0.3s ease;
 }
 
-.decode-button:hover {
-  background-color: #2b6cb0; /* Darker blue on hover */
+.upload-label:hover {
+  background-color: #2b6cb0;
 }
 
-.decode-button:focus {
+.upload-label:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); /* Focus ring */
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Updated grid template */
+  gap: 1rem;
+  margin-bottom: 2rem; /* Updated margin */
+}
+
+/* Popup styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 999;
 }
 
 .popup {
@@ -563,12 +602,12 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 400px; /* Double the width */
+  width: 400px;
   background-color: #2d3748;
   color: #f7fafc;
   padding: 2rem;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Updated box-shadow */
   z-index: 1000;
 }
 
@@ -576,9 +615,10 @@
   margin-bottom: 1rem;
 }
 
+/* Popup inputs and selects */
+.popup-input,
 .popup input,
 .popup select {
-  display: block;
   width: 100%;
   margin-bottom: 1rem;
   padding: 0.5rem;
@@ -586,6 +626,8 @@
   border: 1px solid #4a5568;
   background-color: #1a202c;
   color: #f7fafc;
+  box-sizing: border-box;
+  font-size: 0.875rem;
 }
 
 .popup button {
@@ -596,119 +638,183 @@
   padding: 0.5rem 1rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  width: 100%;
 }
 
 .popup button:hover {
   background-color: #2b6cb0;
 }
 
-.calllist-header, .calllist-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem;
-  background-color: #2d3748;
-  color: #f7fafc;
-  border-bottom: 1px solid #4a5568;
-}
-
-.calllist-header {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.calllist-item {
-  flex: 1;
-  text-align: left;
-  padding: 0.5rem;
-}
-
-.calllist-row {
-  font-size: 1rem;
-}
-
-.calllist-container {
-  width: 100%; /* Ensure it matches the width of the upload section */
-}
-
-.calllist {
-  margin-top: 1rem;
-  width: 100%; /* Match the width of the container */
-}
-
-.calllist-header, .calllist-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem;
-  background-color: #2d3748;
-  color: #f7fafc;
-  border-bottom: 1px solid #4a5568;
-}
-
-.calllist-header {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.calllist-item {
-  flex: 1;
-  text-align: left;
-  padding: 0.5rem;
-}
-
-.calllist-row {
-  font-size: 1rem;
-}
-
-.popup-input {
+/* Popup button styles */
+.popup-button {
   width: 100%;
-  margin-bottom: 10px;
-  padding: 8px;
-  box-sizing: border-box;
-}
-
-/* Add this to your App.css or a relevant CSS file */
-.calllist {
-  background-color: #1a202c; /* Dark background for the table */
-  border-radius: 0.5rem; /* Rounded corners */
-  overflow: hidden; /* Ensures the border-radius is applied */
-}
-
-.calllist-header, .calllist-row {
+  background-color: #4299e1; /* Updated button color */
+  color: #f7fafc;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
-  justify-content: space-between;
-  padding: 1rem; /* Consistent padding for all rows */
-  border-bottom: 1px solid #2d3748; /* Subtle border between rows */
-  color: #f7fafc; /* Light text color */
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
 }
 
-.calllist-header {
-  background-color: #2d3748; /* Slightly darker background for the header */
-  font-weight: bold;
-  font-size: 1rem; /* Consistent font size */
+.popup-button:disabled {
+  background-color: #4a5568;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.calllist-row {
-  background-color: #1a202c; /* Consistent background color */
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+.popup-button:hover:not(:disabled) {
+  background-color: #2b6cb0; /* Updated hover color */
 }
 
-.calllist-row:hover {
-  background-color: #2d3748; /* Darker shade on hover */
+/* Button content styles */
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.calllist-item {
-  flex: 1;
+/* Progress status */
+.progress-status {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: #1a202c;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: #9fa6b2;
+  border: 1px solid #4a5568; /* Updated border */
+}
+
+/* Utility classes */
+.hidden {
+  display: none;
+}
+
+/* Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.custom-range-slider {
+  -webkit-appearance: none;
+  width: 95%;
+  height: 8px;
+  background: #4a5568; /* Match the site's color scheme */
+  border-radius: 5px;
+  outline: none;
+  opacity: 0.7;
+  transition: opacity .2s;
+  margin-bottom: 2rem;
+  margin-left: 1rem;
+}
+
+.custom-range-slider:hover {
+  opacity: 1;
+}
+
+.custom-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #4299e1; /* Thumb color */
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.custom-range-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #4299e1; /* Thumb color */
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Scrollbar styling */
+.calllist-container::-webkit-scrollbar {
+  width: 0.5rem; /* Updated scrollbar width */
+}
+
+.calllist-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1); /* Updated track background */
+}
+
+.calllist-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2); /* Updated thumb background */
+}
+
+.calllist-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3); /* Updated hover background */
+}
+
+/* Rep Tone Display styles */
+.rep-tone-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.rep-tone-row {
+  font-size: 0.875rem;
+  color: #f7fafc;
   text-align: left;
-  padding: 0 0.5rem; /* Horizontal padding for spacing */
-  font-size: 0.875rem; /* Slightly smaller font size for a modern look */
-  white-space: nowrap; /* Prevent text wrapping */
-  overflow: hidden; /* Hide overflow text */
-  text-overflow: ellipsis; /* Add ellipsis for overflow text */
+  padding: 0.125rem 0;
 }
 
-/* Ensure no active or focus styles change the color */
-.calllist-row:active,
-.calllist-row:focus {
-  background-color: #1a202c; /* Keep the same color as the default */
+/* Update the analysis-item for rep tone specifically */
+.analysis-item:first-child {
+  height: auto;
+  min-height: 80px;
+  padding-bottom: 1rem;
 }
 
+.rep-tone-container div {
+  padding-left: 0.5rem;
+}
+
+/* App.css */
+@keyframes strikethrough {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 50%;
+  }
+}
+
+.strikethrough-container {
+  position: relative;
+  display: inline-block;
+}
+
+.strikethrough-container.active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: .1rem;
+  width: 30%;
+  height: 2px;
+  background-color: #e53e3e;
+  animation: strikethrough 0.5s ease-in-out forwards;
+}
+
+.fade-text {
+  opacity: 0.6;
+  transition: opacity 0.5s ease-in-out;
+}
