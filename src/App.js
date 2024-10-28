@@ -14,7 +14,7 @@ import dummyCalls from './totalcalls';
 import saveAndSend from './saveandsend';
 import { getAudioStream, updateAudioTimestamp } from './grabaudioplay';
 import { fetchDecodedCalls, fetchAudioFromBucket } from './supapopulate';
-import LoadDecodeMenu from './tools/LoadDecodeMenu'; // Add this import at the top
+import LoadDecodeMenu from './components/LoadDecodeMenu'; // Add this import at the top
 
 const TWO_MINUTES = 120;
 
@@ -883,6 +883,11 @@ const App = () => {
           }}
           selectedCall={selectedCall}
           setActiveMenu={setActiveMenu}
+          onFilesSelected={(file1, file2) => {
+            setFile1(file1);
+            setFile2(file2);
+            setShowPopup(true);
+          }}
         />
         <div className={`main-content ${isLoadDecodeOpen ? 'menu-open' : ''}`}>
           {activeMenu === 'Dashboard' && (

@@ -8,7 +8,8 @@ const LoadDecodeMenu = ({
   onClose, 
   onCallSelect, 
   selectedCall, 
-  setActiveMenu 
+  setActiveMenu,
+  onFilesSelected  // New prop for notifying parent of file uploads
 }) => {
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
@@ -103,6 +104,13 @@ const LoadDecodeMenu = ({
     onCallSelect(call);
     // Note: Removed the onClose() call to keep the menu open
   };
+
+  // Monitor file uploads and notify parent component
+  useEffect(() => {
+    if (file1 && file2) {
+      onFilesSelected(file1, file2);
+    }
+  }, [file1, file2, onFilesSelected]);
 
   return (
     <div className={`slide-menu ${isOpen ? 'open' : ''}`}>

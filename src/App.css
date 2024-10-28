@@ -1153,16 +1153,6 @@
   width: 10.4rem; /* 13rem * 0.8 = 10.4rem (20% reduction) */
 }
 
-/* Adjust sidebar content for shrunk state */
-.sidebar-container.menu-open h2 {
-  font-size: 1.6rem; /* Reduce the size of the logo */
-}
-
-.sidebar-container.menu-open button {
-  font-size: 0.8rem;
-  padding: 0.6rem;
-}
-
 .mini-call-item {
   cursor: pointer;
   transition: background-color 0.2s;
