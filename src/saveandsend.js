@@ -15,7 +15,12 @@ const saveAndSend = async (data, audioFile1, audioFile2, onProgress = () => {}, 
     throw new Error('Invalid file objects provided');
   }
 
-  const callId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const customerName = data.customerName.split(' ');
+  const firstName = customerName[0];
+  const lastName = customerName[customerName.length - 1];
+  const uploadDate = new Date().toISOString().slice(0, 6).replace('-', '');
+  const callId = `${firstName}-${lastName}-${uploadDate}`;
+
   console.log(`saveAndSend: Generated callId ${callId}`);
 
   const newCall = {

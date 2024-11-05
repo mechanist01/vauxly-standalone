@@ -335,6 +335,8 @@ const Dashboard = ({
               audioUrl={audioUrl}
               onTimeUpdate={handleTimeChange}
               className="audio-player"
+              chatData={chatData}
+              handleTimestampClick={handleTimestampClick}
             />
           )}
         </div>

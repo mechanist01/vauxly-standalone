@@ -779,8 +779,6 @@
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out, left 0.3s ease-in-out, width 0.3s ease-in-out;
   z-index: 5;
-  border-right: 1px solid #4a5568;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
   padding: 1rem;
 }
 
@@ -793,7 +791,7 @@
   width: 90%;
   overflow-y: auto;
   padding-top: 1rem;
-  margin-left: auto; /* Aligns the content to the right */
+  margin-left: 3rem; /* Aligns the content to the right */
 }
 
 /* Upload Mini Containers */

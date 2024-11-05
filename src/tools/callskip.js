@@ -24,7 +24,7 @@ const SkipButtons = ({ chatData, buttonConfigs, onSkip }) => {
         <button
           key={index}
           className="skip-button"
-          onClick={() => skipToMessage(config.searchText, chatData, onSkip)}
+          onClick={() => onSkip(config.searchText)}
         >
           {config.buttonText}
         </button>

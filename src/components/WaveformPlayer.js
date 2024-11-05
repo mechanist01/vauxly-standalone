@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 
-const WaveformPlayer = forwardRef(({ audioUrl, onTimeUpdate, className }, ref) => {
+const WaveformPlayer = forwardRef(({ audioUrl, onTimeUpdate, className, chatData, handleTimestampClick }, ref) => {
   const waveformRef = useRef(null);
   const wavesurferRef = useRef(null);
   const audioRef = useRef(null);
@@ -215,6 +215,21 @@ const WaveformPlayer = forwardRef(({ audioUrl, onTimeUpdate, className }, ref) =
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // New function to handle skipping to a specific message
+  const handleSkip = (searchText) => {
+    // Find the message that matches the searchText
+    const matchingMessage = chatData.find(message =>
+      message.message.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    if (matchingMessage) {
+      // Call handleTimestampClick with the timestamp of the matching message
+      handleTimestampClick(matchingMessage.timestamp);
+    } else {
+      console.warn(`No message found containing "${searchText}"`);
+    }
   };
 
   return (
